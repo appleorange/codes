@@ -9,6 +9,10 @@ from pdb import set_trace as stop
 import torchvision.models as models
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau, CosineAnnealingLR
 from tqdm import tqdm
+from datetime import datetime
+import matplotlib.pyplot as plt
+from utils import plot_training_results
+
 
 if __name__ == "__main__":  
     if torch.cuda.is_available():
@@ -72,12 +76,11 @@ if __name__ == "__main__":
         accuracy = num_exact_matches / total_non_zero_labels
         return accuracy.item()
     
-    # Training Loop
-    for epoch in range(num_epochs):
+    def train_one_epoch(epoch_number, model, train_loader, optimizer, criterion, device):
         model.train()
         running_loss = 0.0
         total_accuracy = 0.0
-        progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}", leave=False)
+        progress_bar = tqdm(train_loader, desc="Training", leave=False)
         for batch in progress_bar:
             optimizer.zero_grad()
             inputs, labels = batch['image'].to(device), batch['labels'].to(device).float()
@@ -92,13 +95,73 @@ if __name__ == "__main__":
 
             progress_bar.set_postfix(loss=running_loss/(progress_bar.n + 1), accuracy=100. * total_accuracy/(progress_bar.n + 1))
             # Remember this is percentage
+        return running_loss, total_accuracy
+    
+    # Training Loop
+    #best_vloss = np.inf
+    #timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+    loss_history = []
+    accuracy_history = []
+    best_loss = np.inf
+    no_improvement = 0
+
+    for epoch in range(num_epochs):
+        model.train()
+        running_loss, running_accuracy = train_one_epoch(epoch, model, train_loader, optimizer, criterion, device)
         scheduler.step()  # Update the learning rate
         save_model(epoch, model, optimizer, running_loss / len(train_loader), f"model_epoch_{epoch+1}.pth")
+        print(f'Epoch [{epoch+1}/{num_epochs}], Training Loss: {running_loss / len(train_loader):.4f}, Training Accuracy: {100. * running_accuracy / len(train_loader):.2f}%')
+        loss_history.append(running_loss / len(train_loader))
+        accuracy_history.append(100. * running_accuracy / len(train_loader))
+        
+        if best_loss < running_loss or best_loss - running_loss < 0.1:
+            no_improvement += 1
+            if no_improvement > 3:
+                print("Early stopping")
+                break
+        else:
+            no_improvement = 0
 
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss / len(train_loader):.4f}, Accuracy: {100. * total_accuracy / len(train_loader):.2f}%')
+        if best_loss > running_loss:
+            best_loss = running_loss
+            #save_model(epoch, model, optimizer, running_loss / len(train_loader), f"best_model.pth")
+            torch.save(model.state_dict(), "best_model.pth")
+            print(f"Model saved to best_model.pth")
+        # # Set the model to evaluation mode, disabling dropout and using population
+        # # statistics for batch normalization.
+        # model.eval()
+        # running_vloss = 0.0
+        # running_accuracy = 0.0
+        # # Disable gradient computation and reduce memory consumption.
+        # with torch.no_grad():
+        #     for i, vdata in enumerate(valid_loader):
+        #         vinputs, vlabels = vdata
+        #         vinputs = vinputs.to(device)
+        #         vlabels = vlabels.to(device).float() 
+        #         voutputs = model(vinputs)
+        #         vloss = criterion(voutputs, vlabels)
+        #         vaccuracy = exact_match_accuracy(voutputs, vlabels)
+        #         running_vloss += vloss
+        #         running_accuracy += vaccuracy
 
+        # avg_vloss = running_vloss / (i + 1)
+        # avg_vaccuracy = running_accuracy / (i + 1)
+        # print(f'Epoch [{epoch+1}/{num_epochs}], Training Loss: {running_loss / len(train_loader):.4f}, Training Accuracy: {100. * running_accuracy / len(train_loader):.2f}%, Eval Loss: {avg_vloss:.4f}, Eval Accuracy: {100. * avg_vaccuracy:.2f}%')
+        # # Track best performance, and save the model's state
+        # if avg_vloss < best_vloss:
+        #     best_vloss = avg_vloss
+        #     model_path = 'model_{}_{}'.format(timestamp, epoch+1)
+        #     torch.save(model.state_dict(), model_path)
+        #     print(f"Model saved to {model_path}")
 
+    #plotting loss and accuracy history in the same plot
+    plot_training_results(accuracy_history, loss_history, "Training Loss and Accuracy History")
+    
+    #load the best model saved earlier for testing
+    model.load_state_dict(torch.load("best_model.pth"))
     # Testing Loop
+    # TODO(load the best model)
     model.eval()
     test_loss = 0.0
     test_accuracy = 0.0
