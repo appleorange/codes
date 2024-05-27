@@ -27,20 +27,53 @@ if __name__ == "__main__":
     
     print('Labels: {}'.format(args.num_labels))
 
-    train_loader, valid_loader, test_loader = get_data(args)
+    #train_loader, valid_loader, test_loader = get_data(args)
+    train_loader, test_loader = get_data(args)
 
-    #exit()
+    # print the length of the train, validation and test loaders
+    print(f"Train loader length: {len(train_loader)}")
+    print(f"Test loader length: {len(test_loader)}")
+
+    # print samples of the train loader to check if the data is loaded correctly
+    for i, data in enumerate(train_loader):
+        print(f"Sample {i+1}: image shape = {data['image'].shape}, label shape = {data['labels'].shape}")
+        print(f"Labels: {data['labels']}")
+        if i == 2:
+            break
+    
+    
+    # display the first six images and labels in the train loader
+    fig, axs = plt.subplots(1, 6, figsize=(9, 9))
+    for i, data in enumerate(train_loader):
+        image = data['image'][0]
+        label = data['labels'][0]
+        print(f"image size {image.shape}")
+        # the image is rgb with 576 x 576 pixels in gray. Properly display it in the 9 inch by 9 inch grid.
+        axs[i].imshow(image.permute(1, 2, 0).numpy())
+        axs[i].set_title(f"{label}")
+        axs[i].axis('off')
+        if i == 5:
+            break
+    plt.show()
 
     num_labels = args.num_labels
     model = models.resnet18(pretrained=True)
-    #The original FC layer is replaced with a new one that has num_labels outputs and a sigmoid activation function.
-    model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels), nn.Sigmoid())  # num_labels to be defined based on your dataset
+
+    if (args.dataset == 'youhome_activity'):
+        model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels))
+    else:
+        #The original FC layer is replaced with a new one that has num_labels outputs and a sigmoid activation function.
+        model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels), nn.Sigmoid())  # num_labels to be defined based on your dataset
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)  # Example scheduler, adjust as needed
 
     # (TODO: shall we use nn.CELoss for activiticy classification?)
-    criterion = nn.BCELoss()
+    criterion = nn.CrossEntropyLoss()
+    if (args.dataset == 'youhome_activity'):
+        criterion = nn.CrossEntropyLoss()
+    else:
+        criterion = nn.BCELoss()
     num_epochs = args.epochs
 
     def save_model(epoch, model, optimizer, loss, file_path="model_checkpoint.pth"):
@@ -56,6 +89,13 @@ if __name__ == "__main__":
         print(f"Model saved to {file_path}")
 
     # (TODO we need to define another accuracy function for single-label multi-class classification)
+    def single_activity_accuracy(outputs, labels):
+        _, predicted = torch.max(outputs, 1)
+        correct = (predicted == labels).sum().item()
+        total = labels.size(0)
+        accuracy = correct / total
+        return accuracy
+    
     def exact_match_accuracy(outputs, labels, threshold=0.5):
         # Convert outputs to binary predictions based on the threshold
         predictions = (outputs > threshold).float()
@@ -84,15 +124,27 @@ if __name__ == "__main__":
         for batch in progress_bar:
             optimizer.zero_grad()
             inputs, labels = batch['image'].to(device), batch['labels'].to(device).float()
+            #(TODO) test whether we need to squeeze the labels for singleactivity classification
+            labels = labels.squeeze(1).long()
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
 
             running_loss += loss.item()
-            accuracy = exact_match_accuracy(outputs, labels)
+            if (args.dataset == 'youhome_activity'):
+                accuracy = single_activity_accuracy(outputs, labels)
+            else:
+                accuracy = exact_match_accuracy(outputs, labels)
             total_accuracy += accuracy
 
+           # print outputs if the batch is the first one
+            if progress_bar.n == 0:
+                print(f"Outputs: {outputs}")
+                print(f"Labels: {labels}")
+                print(f"Loss: {loss}")
+                print(f"Accuracy: {accuracy}")
+    
             progress_bar.set_postfix(loss=running_loss/(progress_bar.n + 1), accuracy=100. * total_accuracy/(progress_bar.n + 1))
             # Remember this is percentage
         return running_loss, total_accuracy
@@ -172,7 +224,10 @@ if __name__ == "__main__":
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             test_loss += loss.item()
-            accuracy = exact_match_accuracy(outputs, labels)
+            if (args.dataset == 'youhome_activity'):
+                accuracy = single_activity_accuracy(outputs, labels)
+            else:
+                accuracy = exact_match_accuracy(outputs, labels)
             test_accuracy += accuracy
 
             progress_bar.set_postfix(test_loss=test_loss/(progress_bar.n + 1), accuracy=100. * test_accuracy/(progress_bar.n + 1))

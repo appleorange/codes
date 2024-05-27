@@ -1,3 +1,8 @@
+#select the data of a single activity from the dataset. 
+#the inputs are from a dir of json files, each file contains a number of attributes, including activities, posture, ID. 
+#the program selects the data with only one activity, and output the data to a new dir of json files and image files
+#the output jason file transform the activities into an integer by the category_info dictionary. For example, 'Drink.Frombottle' is transformed into 0.
+
 import os
 import json, string, sys
 from glob import glob
@@ -20,7 +25,6 @@ category_info = {'Drink.Frombottle': 0, 'Drink.Fromcup': 1, 'Eat.Useutensil': 2,
                  '110': 60, '111': 61, '112': 62, '113': 63, '114': 64,
                  '115': 65, '116': 66, '117': 67, '118': 68, '119': 69,
                  '199': 70, 'male': 71, 'female': 72}
-
 
 def insert_string_list_to_dict(string_list, dictionary):
     # Convert the list of strings into a single string
@@ -61,51 +65,57 @@ def plotData(label_histgram, title):
     # Display the plot
     plt.show()
 
+num_files = 0
+num_single_activies = 0
 
-#num_bins = 46
-test_label_histgram = {}
-eval_label_histgram = {}
-train_label_histgram = {}
-num_files = 0 
-num_multi_activies = 0
-multi_activities_dict = {}
-
-train_pattern = r"^0000[0]\d+.json$"
-test_pattern = r"^0000[2][4-6]\d+.json$"
-eval_pattern = r"^0000[2][0-3]\d+.json$"
-
+os.system(f"rm -rf data/*")  
+os.system(f"mkdir -p data/train/image")
+os.system(f"mkdir -p data/train/label")
+os.system(f"mkdir -p data/test/image")
+os.system(f"mkdir -p data/test/label")  
 
 for name in glob(os.path.join("cropped_label", "*.json")):
     num_files += 1
     basename = name.split('/')[-1]
-    if num_files <100:
-        print(name + " " + basename)
+    if num_single_activies < 20000:
+        if num_files % 100 == 0:
+            print(name + " " + basename)
+    else:
+        break
     with open(name) as f:
         data = json.load(f)
-        if len(data['activities']) > 1:
-            num_multi_activies += 1
-            sorted_activies = []
-            for activity in data['activities']:
-                if (len(activity.strip())) and "None" not in activity:
-                    sorted_activies.append(activity.strip())
-            sorted_activies.sort()
-            multi_activities_dict = insert_string_list_to_dict(sorted_activies, multi_activities_dict)
-            if num_files <100:
-                print(data['activities'])
-        for activity in data['activities']:
-             if len(activity.strip()) and ("None" not in activity):
-                activity = activity.strip()
-                if re.match(test_pattern, basename):
-                    test_label_histgram[activity] = test_label_histgram.get(activity, 0) + 1 
-                elif re.match(eval_pattern, basename):
-                    eval_label_histgram[activity] = eval_label_histgram.get(activity, 0) + 1
-                elif re.match(train_pattern, basename):
-                    train_label_histgram[activity] = train_label_histgram.get(activity, 0) + 1
-                else:
-                    continue
+        num_activities = 0
+        valid_activity = ""
 
-print("preparing to plot label histogram: num_files = " + str(num_files) + " num_multi_activies = " + str(num_multi_activies))
-print(multi_activities_dict)
-#plotData(train_label_histgram, "training_labels")
-#plotData(eval_label_histgram, "eval_labels")
-#plotData(test_label_histgram, "test_labels")
+        # Check there is only one activty and the activity is not None
+        for activity in data['activities']:
+            activity = activity.strip()
+            #print(f"!!!!activity = {activity} valid_activity = {valid_activity}")
+            if len(activity) and ("None" != activity):
+                num_activities += 1
+                valid_activity = activity
+
+        #print(f"num_activities = {num_activities} valid_activity = {valid_activity}")
+        if num_activities == 1:
+            num_single_activies += 1
+
+            dir_name = ""
+            if (num_single_activies % 100 < 80):
+                dir_name = "data/train"
+            else:
+                dir_name = "data/test"
+
+            #write a new json file with the activity transformed into an integer
+            new_name = os.path.join(dir_name, "label", basename)
+            with open(new_name, 'w') as f:
+                data['activity_label'] = category_info[valid_activity]
+                data['activity_name'] = valid_activity
+                json.dump(data, f)
+            #copy the image file to the new single_activity_image dir
+            image_name = basename[:-4] + "jpg"
+            os.system(f"cp cropped_image/{image_name} {dir_name}/image/{image_name}")  
+        else:
+            if (num_files % 100 == 0):
+                print(f"!skip: multiple activities {num_activities} vs. data['num_activities'] {data['num_activities']}")
+
+print(f"total files {num_files}, single activity files {num_single_activies}")

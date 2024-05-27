@@ -33,18 +33,17 @@ category_info = {'Drink.Frombottle': 0, 'Drink.Fromcup': 1, 'Eat.Useutensil': 2,
 
 
 class YouHomeDataset(torch.utils.data.Dataset):
-    def __init__(self, data_root='./data/YouHome-multilabels/',
+    def __init__(self, data_root,
                  image_transform=None, is_multi_labels=False, known_labels=0, training=False, testing=False, val=False, cross_cam_mode=0):
-        print("call YouHomeDataset Init")
+        print(f"call YouHomeDataset Init: is_multi_labels set to be {is_multi_labels}")
         print(data_root)
         self.data_root = data_root
         self.img_names = []
 
-        print(f"is_multi_labels set to be {is_multi_labels}")
-        if is_multi_labels:
-            self.num_labels = 73 # for all the labels
-        else: 
-            self.num_labels = 45 # for just activities labels 
+        #(TODO) add the multi-labels support back
+        assert is_multi_labels == False, "is_multi_labels should be False" 
+        self.num_labels = 1 # only activity
+
         self.testing = testing
         self.labels = []
         self.img_dir = data_root
@@ -69,23 +68,14 @@ class YouHomeDataset(torch.utils.data.Dataset):
             
             with open(label_file) as f:
                 data = json.load(f)
-            for activity in data['activities']:
-                if len(activity.strip()) and ("None" not in activity):
-                    activity = activity.strip()
-                    label_vector[int(category_info[activity])] = 1.0
-            if is_multi_labels:
-                if len(data['posture'].strip()):
-                    label_vector[int(category_info[data['posture']])] = 1.0
-                if len(data['ID'].strip()):
-                    label_vector[int(category_info[data['ID']])] = 1.0
-                if len(data['gender'].strip()):
-                    label_vector[int(category_info[data['gender']])] = 1.0
+                label_vector[0] = data['activity_label']
 
             self.labels.append(label_vector)
         self.labels = np.array(self.labels).astype(int)
         #print(self.labels) 
         self.image_transform = image_transform
         self.epoch = 1
+    
     def __getitem__(self, index):
         name = self.img_names[index] + '.jpg'
         image = Image.open(os.path.join(self.img_dir, name)).convert('RGB')
@@ -103,5 +93,62 @@ class YouHomeDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.img_names)
 
+
+
+    # def __init__(self, data_root='./data/YouHome-multilabels/',
+    #              image_transform=None, is_multi_labels=False, known_labels=0, training=False, testing=False, val=False, cross_cam_mode=0):
+    #     print("call YouHomeDataset Init")
+    #     print(data_root)
+    #     self.data_root = data_root
+    #     self.img_names = []
+
+    #     print(f"is_multi_labels set to be {is_multi_labels}")
+    #     if is_multi_labels:
+    #         self.num_labels = 73 # for all the labels
+    #     else: 
+    #         self.num_labels = 45 # for just activities labels 
+    #     self.testing = testing
+    #     self.labels = []
+    #     self.img_dir = data_root
+    #     # print(training, testing, val)
+    #     if training:
+    #         self.img_dir = self.data_root + "train/image"
+    #         self.labels_path = self.data_root + "train/label"
+    #     elif testing:
+    #         self.img_dir = self.data_root + "test/image"
+    #         self.labels_path = self.data_root + "test/label"
+    #     elif val:
+    #         self.img_dir = self.data_root + "val/image"
+    #         self.labels_path = self.data_root + "val/label"
+            
+    #     for name in glob(os.path.join(self.img_dir, '*.jpg')):
+    #         img_name = name.split("/")[-1][:-4]
+    #         self.img_names.append(img_name)
+    #         label_file = os.path.join(self.labels_path, img_name+ '.json')
+    #         label_vector = np.zeros(self.num_labels)
+
+    #         #print(f"open file {img_name}")
+            
+    #         with open(label_file) as f:
+    #             data = json.load(f)
+    #         for activity in data['activities']:
+    #             if len(activity.strip()) and ("None" not in activity):
+    #                 activity = activity.strip()
+    #                 label_vector[int(category_info[activity])] = 1.0
+    #         if is_multi_labels:
+    #             if len(data['posture'].strip()):
+    #                 label_vector[int(category_info[data['posture']])] = 1.0
+    #             if len(data['ID'].strip()):
+    #                 label_vector[int(category_info[data['ID']])] = 1.0
+    #             if len(data['gender'].strip()):
+    #                 label_vector[int(category_info[data['gender']])] = 1.0
+
+    #         self.labels.append(label_vector)
+    #     self.labels = np.array(self.labels).astype(int)
+    #     #print(self.labels) 
+    #     self.image_transform = image_transform
+    #     self.epoch = 1
+
+ 
 
 # train_dataset = YouHomeDataset()
