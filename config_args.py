@@ -8,16 +8,17 @@ def get_args(parser, eval=False):
     parser.add_argument('--dataroot', type=str, default='./data/')
     parser.add_argument('--load_saved_model', type=bool, default=True)
     parser.add_argument('--load_from_saved_model_name', type=str, default='best_model.pth')
-    parser.add_argument('--save_best_model_to_gdrive', type=bool, default=False)
-    parser.add_argument('--batch_size', type=int, default=8) #32
+    parser.add_argument('--save_best_model_to_gdrive', type=bool, default=True)
+    parser.add_argument('--batch_size', type=int, default=128) // 32 best for T4, 128 best for L4
     parser.add_argument('--epochs', type=int, default=100)
-
+    parser.add_argument('--workers', type=int, default=20) // 10 best for T4, 20 best for L4
+    
     parser.add_argument('--dataset', type=str,
                         choices=['coco', 'voc', 'coco1000', 'nus', 'vg', 'news', 'cub', 'youhome_multi', 'youhome_activity',
                                  'youhome_multi_cross'], 
                                  default='youhome_activity') 
                                  ##default='coco')
-    parser.add_argument('--workers', type=int, default=10)
+    #parser.add_argument('--workers', type=int, default=20)
     parser.add_argument('--results_dir', type=str, default='results/')
 
     # Optimization
