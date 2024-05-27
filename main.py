@@ -221,6 +221,8 @@ if __name__ == "__main__":
         progress_bar = tqdm(test_loader, desc="Testing", leave=False)
         for batch in progress_bar:
             inputs, labels = batch['image'].to(device), batch['labels'].to(device).float()
+             #(TODO) test whether we need to squeeze the labels for singleactivity classification
+            labels = labels.squeeze(1).long()
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             test_loss += loss.item()
