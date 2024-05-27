@@ -36,12 +36,12 @@ def get_data(args):
                                             ]),
                                             transforms.Resize((crop_size, crop_size)),
                                             transforms.RandomHorizontalFlip(),
-                                            transforms.ToTensor()]) #,
-                                            #normTransform])
+                                            transforms.ToTensor(),
+                                            normTransform])
         testTransform = transforms.Compose([transforms.Resize((scale_size, scale_size)),
                                             transforms.CenterCrop(crop_size),
-                                            transforms.ToTensor()]) #,
-                                            #normTransform])
+                                            transforms.ToTensor(),
+                                            normTransform])
     else:
         trainTransform = transforms.Compose([transforms.Resize((scale_size, scale_size)),
                                             transforms.RandomChoice([

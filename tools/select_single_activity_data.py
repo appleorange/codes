@@ -77,7 +77,7 @@ os.system(f"mkdir -p data/test/label")
 for name in glob(os.path.join("cropped_label", "*.json")):
     num_files += 1
     basename = name.split('/')[-1]
-    if num_single_activies < 20000:
+    if num_single_activies < 30000:
         if num_files % 100 == 0:
             print(name + " " + basename)
     else:

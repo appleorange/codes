@@ -43,27 +43,33 @@ if __name__ == "__main__":
     
     
     # display the first six images and labels in the train loader
-    fig, axs = plt.subplots(1, 6, figsize=(9, 9))
-    for i, data in enumerate(train_loader):
-        image = data['image'][0]
-        label = data['labels'][0]
-        print(f"image size {image.shape}")
-        # the image is rgb with 576 x 576 pixels in gray. Properly display it in the 9 inch by 9 inch grid.
-        axs[i].imshow(image.permute(1, 2, 0).numpy())
-        axs[i].set_title(f"{label}")
-        axs[i].axis('off')
-        if i == 5:
-            break
-    plt.show()
+    # fig, axs = plt.subplots(1, 6, figsize=(9, 9))
+    # for i, data in enumerate(train_loader):
+    #     image = data['image'][0]
+    #     label = data['labels'][0]
+    #     print(f"image size {image.shape}")
+    #     # the image is rgb with 576 x 576 pixels in gray. Properly display it in the 9 inch by 9 inch grid.
+    #     axs[i].imshow(image.permute(1, 2, 0).numpy())
+    #     axs[i].set_title(f"{label}")
+    #     axs[i].axis('off')
+    #     if i == 5:
+    #         break
+    # plt.show()
 
     num_labels = args.num_labels
-    model = models.resnet18(pretrained=True)
 
+    # load or create model
+    model = models.resnet18(pretrained=True)
     if (args.dataset == 'youhome_activity'):
         model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels))
     else:
         #The original FC layer is replaced with a new one that has num_labels outputs and a sigmoid activation function.
         model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels), nn.Sigmoid())  # num_labels to be defined based on your dataset
+
+    if (args.load_saved_model == True and args.load_from_saved_model_name != ''):
+        print(f"Loading model from {args.load_from_saved_model_name}")
+        model.load_state_dict(torch.load(args.load_from_saved_model_name))
+        
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)  # Example scheduler, adjust as needed
@@ -158,6 +164,8 @@ if __name__ == "__main__":
     best_loss = np.inf
     no_improvement = 0
 
+    start_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
     for epoch in range(num_epochs):
         model.train()
         running_loss, running_accuracy = train_one_epoch(epoch, model, train_loader, optimizer, criterion, device)
@@ -179,6 +187,10 @@ if __name__ == "__main__":
             best_loss = running_loss
             #save_model(epoch, model, optimizer, running_loss / len(train_loader), f"best_model.pth")
             torch.save(model.state_dict(), "best_model.pth")
+            #save the model to google drive with the current timestamp and epoch number as the suffix.
+            if (args.save_best_model_to_gdrive == True):
+                torch.save(model.state_dict(), f"/content/drive/MyDrive/sabella/research/models/best_model_{start_timestamp}")
+            
             print(f"Model saved to best_model.pth")
         # # Set the model to evaluation mode, disabling dropout and using population
         # # statistics for batch normalization.

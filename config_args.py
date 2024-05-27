@@ -6,6 +6,12 @@ from pdb import set_trace as stop
 
 def get_args(parser, eval=False):
     parser.add_argument('--dataroot', type=str, default='./data/')
+    parser.add_argument('--load_saved_model', type=bool, default=True)
+    parser.add_argument('--load_from_saved_model_name', type=str, default='best_model.pth')
+    parser.add_argument('--save_best_model_to_gdrive', type=bool, default=False)
+    parser.add_argument('--batch_size', type=int, default=8) #32
+    parser.add_argument('--epochs', type=int, default=100)
+
     parser.add_argument('--dataset', type=str,
                         choices=['coco', 'voc', 'coco1000', 'nus', 'vg', 'news', 'cub', 'youhome_multi', 'youhome_activity',
                                  'youhome_multi_cross'], 
@@ -17,12 +23,12 @@ def get_args(parser, eval=False):
     # Optimization
     parser.add_argument('--optim', type=str, choices=['adam', 'sgd'], default='adam')
     parser.add_argument('--lr', type=float, default=0.0002)
-    parser.add_argument('--batch_size', type=int, default=8) #32
+    #parser.add_argument('--batch_size', type=int, default=8) #32
     parser.add_argument('--test_batch_size', type=int, default=-1)
     parser.add_argument('--grad_ac_steps', type=int, default=1)
     parser.add_argument('--scheduler_step', type=int, default=1000)
     parser.add_argument('--scheduler_gamma', type=float, default=0.1)
-    parser.add_argument('--epochs', type=int, default=3)
+    #parser.add_argument('--epochs', type=int, default=3)
     parser.add_argument('--int_loss', type=float, default=0.0)
     parser.add_argument('--aux_loss', type=float, default=0.0)
     parser.add_argument('--loss_type', type=str, choices=['bce', 'mixed', 'class_ce', 'soft_margin'], default='bce')
