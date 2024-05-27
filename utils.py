@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 # creata a myPlot function to plot two series in the same plot. The inputs are the two series and the title of the plot. The function should save the plot as "loss_history.png" in the current directory.
-def plot_training_results(accuracy_history, loss_history, title):
+def plot_training_results(accuracy_history, loss_history, title, plt_save_destination):
     plt.figure()
     plt.title(title)
     # Plot the loss curves
@@ -20,5 +20,5 @@ def plot_training_results(accuracy_history, loss_history, title):
 
     plt.show()
 
-    plt.savefig("loss_history.png")
+    plt.savefig(plt_save_destination)
     return

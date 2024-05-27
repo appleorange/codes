@@ -145,11 +145,11 @@ if __name__ == "__main__":
             total_accuracy += accuracy
 
            # print outputs if the batch is the first one
-            if progress_bar.n == 0:
-                print(f"Outputs: {outputs}")
-                print(f"Labels: {labels}")
-                print(f"Loss: {loss}")
-                print(f"Accuracy: {accuracy}")
+            # if progress_bar.n == 0:
+            #     print(f"Outputs: {outputs}")
+            #     print(f"Labels: {labels}")
+            #     print(f"Loss: {loss}")
+            #     print(f"Accuracy: {accuracy}")
     
             progress_bar.set_postfix(loss=running_loss/(progress_bar.n + 1), accuracy=100. * total_accuracy/(progress_bar.n + 1))
             # Remember this is percentage
@@ -220,7 +220,16 @@ if __name__ == "__main__":
         #     print(f"Model saved to {model_path}")
 
     #plotting loss and accuracy history in the same plot
-    plot_training_results(accuracy_history, loss_history, "Training Loss and Accuracy History")
+    #(TODO) either plot or save the data to the cloud
+    
+    if (args.save_best_model_to_gdrive == True):
+        plt_save_dir = "/content/drive/MyDrive/sabella/research/models/"
+        torch.save(accuracy_history, f"/content/drive/MyDrive/sabella/research/models/accuracy_history_{start_timestamp}.pt")
+        torch.save(loss_history, f"/content/drive/MyDrive/sabella/research/models/loss_history_{start_timestamp}.pt")
+    else:
+        plt_save_dir = "./"
+    plt_save_destionation = f"{plt_save_dir}loss_history_{start_timestamp}.png"
+    plot_training_results(accuracy_history, loss_history, "Training Loss and Accuracy History", plt_save_destionation)
     
     #load the best model saved earlier for testing
     model.load_state_dict(torch.load("best_model.pth"))
