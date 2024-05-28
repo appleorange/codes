@@ -1,8 +1,9 @@
 import torch
 from skimage import io, transform
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from torchvision import transforms
+from torchvision.transforms import v2
 from pdb import set_trace as stop
 import os, random
 
@@ -10,6 +11,29 @@ from youhome_dataset import YouHomeDataset
 import warnings
 
 warnings.filterwarnings("ignore")
+
+def getYouHomeSampler(dataset):
+    activity_dict = {}
+    for idx, sample in enumerate(dataset):
+        #print(sample['labels'][0].item())
+        activity = int(sample['labels'][0].item())
+        activity_dict[activity] = activity_dict.get(activity, 0) + 1
+    
+    sorted_dict = dict(sorted(activity_dict.items(), key=lambda item: item[0]))
+    print(f"the raw inputs activity_dict = {sorted_dict}")
+    
+    sample_weights = [0] * len(dataset)
+
+    for idx, sample in enumerate(dataset):
+        activity = int(sample['labels'][0].item())
+        #activity = sample['labels'][0]
+        if activity_dict[activity] > 0:
+            sample_weights[idx] = 1.0 / activity_dict[activity]
+
+    sampler = WeightedRandomSampler(
+        sample_weights, num_samples=len(sample_weights), replacement=True
+    )
+    return sampler
 
 def get_data(args):
     dataset = args.dataset
@@ -35,7 +59,15 @@ def get_data(args):
                                                 transforms.RandomCrop(320)
                                             ]),
                                             transforms.Resize((crop_size, crop_size)),
-                                            transforms.RandomHorizontalFlip(),
+                                            transforms.RandomChoice([
+                                                transforms.RandomHorizontalFlip(),
+                                                transforms.RandomVerticalFlip()
+                                                #transforms.RandomRotation(90),
+                                            ]),
+                                            transforms.RandomChoice([
+                                                transforms.v2.RandomPhotometricDistort(),
+                                                transforms.v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.))
+                                            ]),
                                             transforms.ToTensor(),
                                             normTransform])
         testTransform = transforms.Compose([transforms.Resize((scale_size, scale_size)),
@@ -88,7 +120,9 @@ def get_data(args):
         exit(0)
 
     if train_dataset is not None:
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=workers,
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, #shuffle=True, 
+                                  num_workers=workers,
+                                  sampler=getYouHomeSampler(train_dataset),
                                   drop_last=drop_last)
     # if valid_dataset is not None:
     #     valid_loader = DataLoader(valid_dataset, batch_size=args.test_batch_size, shuffle=False, num_workers=workers)
