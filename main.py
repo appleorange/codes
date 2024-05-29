@@ -155,12 +155,45 @@ if __name__ == "__main__":
             # Remember this is percentage
         return running_loss, total_accuracy
     
+    def eval_one_epoch(epoch_number, model, eval_loader, criterion, device):
+        model.eval()
+        running_loss = 0.0
+        total_accuracy = 0.0
+        progress_bar = tqdm(eval_loader, desc="Eval", leave=False)
+        for batch in progress_bar:
+            inputs, labels = batch['image'].to(device), batch['labels'].to(device).float()
+            #(TODO) test whether we need to squeeze the labels for singleactivity classification
+            labels = labels.squeeze(1).long()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            
+            running_loss += loss.item()
+            if (args.dataset == 'youhome_activity'):
+                accuracy = single_activity_accuracy(outputs, labels)
+            else:
+                accuracy = exact_match_accuracy(outputs, labels)
+            total_accuracy += accuracy
+
+           # print outputs if the batch is the first one
+            # if progress_bar.n == 0:
+            #     print(f"Outputs: {outputs}")
+            #     print(f"Labels: {labels}")
+            #     print(f"Loss: {loss}")
+            #     print(f"Accuracy: {accuracy}")
+    
+            progress_bar.set_postfix(loss=running_loss/(progress_bar.n + 1), accuracy=100. * total_accuracy/(progress_bar.n + 1))
+            # Remember this is percentage
+        return running_loss, total_accuracy
+    
     # Training Loop
     #best_vloss = np.inf
     #timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
     loss_history = []
     accuracy_history = []
+    vloss_history = []
+    vaccuracy_history = []
+
     best_loss = np.inf
     no_improvement = 0
 
@@ -194,7 +227,11 @@ if __name__ == "__main__":
             print(f"Model saved to best_model.pth")
         # # Set the model to evaluation mode, disabling dropout and using population
         # # statistics for batch normalization.
-        # model.eval()
+        model.eval()
+        running_vloss, running_vaccuracy = eval_one_epoch(epoch, model, test_loader, criterion, device)
+        print(f'Epoch [{epoch+1}/{num_epochs}], Eval Loss: {running_vloss / len(test_loader):.4f}, Eval Accuracy: {100. * running_vaccuracy / len(test_loader):.2f}%')
+        vloss_history.append(running_vloss / len(test_loader))
+        vaccuracy_history.append(100. * running_vaccuracy / len(test_loader))
         # running_vloss = 0.0
         # running_accuracy = 0.0
         # # Disable gradient computation and reduce memory consumption.
@@ -222,14 +259,21 @@ if __name__ == "__main__":
     #plotting loss and accuracy history in the same plot
     #(TODO) either plot or save the data to the cloud
     
+    print(f"loss_history = {loss_history}")
+    print(f"accuracy_history = {accuracy_history}")
+    print(f"vloss_history = {vloss_history}")
+    print(f"vaccuracy_history = {vaccuracy_history}")
+
     if (args.save_best_model_to_gdrive == True):
         plt_save_dir = "/content/drive/MyDrive/sabella/research/models/"
         torch.save(accuracy_history, f"/content/drive/MyDrive/sabella/research/models/accuracy_history_{start_timestamp}.pt")
         torch.save(loss_history, f"/content/drive/MyDrive/sabella/research/models/loss_history_{start_timestamp}.pt")
+        torch.save(vaccuracy_history, f"/content/drive/MyDrive/sabella/research/models/vaccuracy_history_{start_timestamp}.pt")
+        torch.save(vloss_history, f"/content/drive/MyDrive/sabella/research/models/vloss_history_{start_timestamp}.pt")
     else:
         plt_save_dir = "./"
     plt_save_destionation = f"{plt_save_dir}loss_history_{start_timestamp}.png"
-    plot_training_results(accuracy_history, loss_history, "Training Loss and Accuracy History", plt_save_destionation)
+    plot_training_results(accuracy_history, vaccuracy_history, loss_history, vloss_history, "Training Loss and Accuracy History", plt_save_destionation)
     
     #load the best model saved earlier for testing
     model.load_state_dict(torch.load("best_model.pth"))
