@@ -11,13 +11,61 @@ from youhome_dataset import YouHomeDataset
 import warnings
 
 warnings.filterwarnings("ignore")
-
+# This is the data from 20K data training set.
+precomputed_activity_dict = {
+    0: 313,
+    1: 350,
+    2: 1450,
+    3: 607,
+    4: 150,
+    5: 1841,
+    6: 20,       #original value is 9
+    7: 585,
+    8: 36,
+    9: 199,
+    10: 540,
+    11: 183,
+    12: 3824,
+    13: 351,
+    14: 1637,
+    15: 59,
+    16: 322,
+    17: 1050,
+    18: 20,      # original value is 9
+    19: 21,
+    20: 16,
+    21: 23,
+    22: 104,
+    23: 20,   # original value is 5
+    24: 35,
+    25: 103,
+    26: 70,
+    27: 20,  # original value is 8
+    28: 72,
+    29: 60,
+    30: 69,
+    31: 162,
+    32: 58,
+    33: 125,
+    34: 150,
+    35: 165,
+    36: 71,
+    37: 111,
+    38: 645,
+    39: 20,   # original value is 14
+    40: 20,   # original value is 6
+    41: 20,
+    42: 20,   # original value is 1
+    43: 149,
+    44: 222,
+}
 def getYouHomeSampler(dataset):
-    activity_dict = {}
-    for idx, sample in enumerate(dataset):
-        #print(sample['labels'][0].item())
-        activity = int(sample['labels'][0].item())
-        activity_dict[activity] = activity_dict.get(activity, 0) + 1
+    activity_dict = precomputed_activity_dict
+    
+    # for idx, sample in enumerate(dataset):
+    #     #print(sample['labels'][0].item())
+    #     activity = int(sample['labels'][0].item())
+    #     activity_dict[activity] = activity_dict.get(activity, 0) + 1
     
     sorted_dict = dict(sorted(activity_dict.items(), key=lambda item: item[0]))
     print(f"the raw inputs activity_dict = {sorted_dict}")
@@ -64,10 +112,10 @@ def get_data(args):
                                                 transforms.RandomVerticalFlip()
                                                 #transforms.RandomRotation(90),
                                             ]),
-                                            transforms.RandomChoice([
-                                                transforms.v2.RandomPhotometricDistort(),
-                                                transforms.v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.))
-                                            ]),
+                                            # transforms.RandomChoice([
+                                            #     transforms.v2.RandomPhotometricDistort(),
+                                            #     transforms.v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.))
+                                            # ]),
                                             transforms.ToTensor(),
                                             normTransform])
         testTransform = transforms.Compose([transforms.Resize((scale_size, scale_size)),

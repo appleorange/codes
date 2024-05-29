@@ -31,5 +31,5 @@ def print_activity_distribution(directory):
         print(f"{key}: {value*100:.2f}%")
     return sorted_dict
 
-print_activity_distribution("small_data/train/label")
+print_activity_distribution("data/test/label")
 
