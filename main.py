@@ -27,9 +27,9 @@ def save_model(epoch, model, optimizer, loss, file_path="model_checkpoint.pth"):
 
 # (TODO we need to define another accuracy function for single-label multi-class classification)
 def single_activity_accuracy(outputs, labels, debugging_details=False):
-    print(f"single_activity_accuracy: outputs.shape = {outputs.shape} labels.shape = {labels.shape}")
-    print(f"single_activity_accuracy: outputs = {outputs}")
-    print(f"single_activity_labels: labels = {labels}")
+    #print(f"single_activity_accuracy: outputs.shape = {outputs.shape} labels.shape = {labels.shape}")
+    #print(f"single_activity_accuracy: outputs = {outputs}")
+    #print(f"single_activity_labels: labels = {labels}")
     _, predicted = torch.max(outputs, 1)
     correct = (predicted == labels).sum().item()
     total = labels.size(0)
@@ -38,7 +38,7 @@ def single_activity_accuracy(outputs, labels, debugging_details=False):
     mismatched_labels = None
     if (debugging_details == True):
         idxs_mask = (predicted != labels.view_as(predicted)).view(-1)
-        print(f"idxs_mask = {idxs_mask}")
+        #print(f"idxs_mask = {idxs_mask}")
         mismatched_labels = []
         if idxs_mask.numel():
             mismatched_labels = labels[idxs_mask].cpu().numpy()
