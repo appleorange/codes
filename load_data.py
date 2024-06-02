@@ -87,6 +87,7 @@ def get_data(args):
     dataset = args.dataset
     data_root = args.dataroot
     batch_size = args.batch_size
+    run_testing_only = args.run_testing_only
 
     rescale = args.scale_size
     random_crop = args.crop_size
@@ -108,8 +109,8 @@ def get_data(args):
                                             ]),
                                             transforms.Resize((crop_size, crop_size)),
                                             transforms.RandomChoice([
-                                                transforms.RandomHorizontalFlip(),
-                                                transforms.RandomVerticalFlip()
+                                                transforms.RandomHorizontalFlip()#,
+                                                #transforms.RandomVerticalFlip()
                                                 #transforms.RandomRotation(90),
                                             ]),
                                             # transforms.RandomChoice([
@@ -140,6 +141,8 @@ def get_data(args):
                                             transforms.ToTensor(),
                                             normTransform])
 
+    train_dataset = None
+    train_loader = None
     test_dataset = None
     test_loader = None
     drop_last = False
@@ -147,11 +150,13 @@ def get_data(args):
         youhome_root = data_root #Your Dataset
         print("Start to load dataset")
         print("data_root = " + youhome_root)
-        train_dataset = YouHomeDataset(
-            data_root=youhome_root,
-            image_transform=trainTransform,
-            training=True)
-        print("Training set loaded")
+
+        if run_testing_only == False:
+            train_dataset = YouHomeDataset(
+                data_root=youhome_root,
+                image_transform=trainTransform,
+                training=True)
+            print("Training set loaded")
         # valid_dataset = YouHomeDataset(
         #     data_root=youhome_root,
         #     image_transform=testTransform,
