@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import argparse,math,numpy as np
+import torchmetrics
+import seaborn as sns
 
 from load_data import get_data
 from config_args import get_args
@@ -30,10 +32,12 @@ def save_model(epoch, model, optimizer, loss, file_path="model_checkpoint.pth"):
 # labels: the ground truth labels
 # debugging_details: if True, return mismatched_labels and mismatched_names if image_names is not None
 # image_names: if not None, the image names for debugging if you want to show the mismatched image names
-def single_activity_accuracy(outputs, labels, debugging_details=False, image_names=None):
+def single_activity_accuracy(outputs, labels, confusion_matrix=None, debugging_details=False, image_names=None):
     #print(f"single_activity_labels: labels = {labels}")
     _, predicted = torch.max(outputs, 1)
     correct = (predicted == labels).sum().item()
+    if (confusion_matrix is not None):
+        confusion_matrix(predicted, labels)
     total = labels.size(0)
     accuracy = correct / total
 
@@ -162,11 +166,24 @@ def get_mismatched_image_names_by_labels(mismatched_image_names):
             mismatched_image_names_by_labels[label] = [image_name]
     return mismatched_image_names_by_labels
 
+def plot_confusion_matrix(confusion_matrix, save_path):
+    cm = confusion_matrix.detach().cpu().numpy()
+
+    plt.figure(figsize=(10, 10))
+    sns.heatmap(cm, annot=True, fmt='d')
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.savefig(save_path)
+    plt.show()
+
+    
+
 def run_testing(model, test_loader, criterion, device, debugging_details=False, save_debugging_to_gdrive=False, file_suffix=""):
     model.eval()
     test_loss = 0.0
     test_accuracy = 0.0
 
+    confusion_matrix_metric = torchmetrics.ConfusionMatrix(task="multiclass", num_classes=45)
     mismatched_labels = np.array([])
     mismatched_imange_names = {}
     with torch.no_grad():
@@ -181,7 +198,7 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
             test_loss += loss.item()
             if (args.dataset == 'youhome_activity'):
                 mismatched_labels_in_batch = []
-                accuracy, mismatched_labels_in_batch, mismatched_image_names_in_batch = single_activity_accuracy(outputs, labels, debugging_details, image_names)
+                accuracy, mismatched_labels_in_batch, mismatched_image_names_in_batch = single_activity_accuracy(outputs, labels, confusion_matrix_metric, debugging_details, image_names)
                 if (mismatched_labels_in_batch is not None and len(mismatched_labels_in_batch) > 0):
                     mismatched_labels = np.concatenate((mismatched_labels, mismatched_labels_in_batch))
                 if (mismatched_image_names_in_batch is not None and len(mismatched_image_names_in_batch) > 0):
@@ -192,7 +209,15 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
 
             progress_bar.set_postfix(test_loss=test_loss/(progress_bar.n + 1), accuracy=100. * test_accuracy/(progress_bar.n + 1))
 
+    if (save_debugging_to_gdrive == True):
+        save_debugging_info_dir = "/content/drive/MyDrive/sabella/research/models/"
+    else:
+        save_debugging_info_dir = "./"
+
     print(f'Test Loss: {test_loss / len(test_loader):.4f}, Accuracy: {100. * test_accuracy / len(test_loader):.2f}%')
+    confusion_matrix = confusion_matrix_metric.compute()
+    print(f"Confusion matrix: {confusion_matrix}")
+    plot_confusion_matrix(confusion_matrix, f"{save_debugging_info_dir}confusion_matrix_{file_suffix}.png")
 
     mismatched_labels_stats = None
     mismatched_image_names_by_labels = None
@@ -213,11 +238,6 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
         mismatched_label_images=mismatched_image_names_by_labels
     )
     print(f"Model Testing Result: {model_testing_result}")
-
-    if (save_debugging_to_gdrive == True):
-        save_debugging_info_dir = "/content/drive/MyDrive/sabella/research/models/"
-    else:
-        save_debugging_info_dir = "./"
 
     with open(f"{save_debugging_info_dir}model_testing_result_{file_suffix}.txt", "w") as f:
         f.write(str(model_testing_result))

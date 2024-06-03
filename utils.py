@@ -19,10 +19,9 @@ def plot_training_results(accuracy_history, vaccuracy_history, loss_history, vlo
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.legend()
-
-    plt.show()
-
+    
     plt.savefig(plt_save_destination)
+    plt.show()
     return
 
 
