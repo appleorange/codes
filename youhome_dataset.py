@@ -87,6 +87,7 @@ class YouHomeDataset(torch.utils.data.Dataset):
         sample = {}
         sample['image'] = image
         sample['labels'] = labels
+        sample['name'] = name
 
         return sample
 

@@ -9,7 +9,8 @@ def get_args(parser, eval=False):
     # if run_testing_only is True, then the model will be loaded from the saved model and run testing only.
     parser.add_argument('--run_testing_only', type=bool, default=False)
     parser.add_argument('--dump_testing_details', type=bool, default=False)
-
+    parser.add_argument('--save_debugging_to_gdrive', type=bool, default=False)
+    
 
     parser.add_argument('--load_saved_model', type=bool, default=True)
     parser.add_argument('--load_from_saved_model_name', type=str, default='best_model.pth')

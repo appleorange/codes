@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import argparse,math,numpy as np
-from load_data import get_data
 
+from load_data import get_data
 from config_args import get_args
+from model_testing_result import ModelTestingResult
 
 from pdb import set_trace as stop
 import torchvision.models as models
@@ -25,10 +26,11 @@ def save_model(epoch, model, optimizer, loss, file_path="model_checkpoint.pth"):
     }, file_path)
     print(f"Model saved to {file_path}")
 
-# (TODO we need to define another accuracy function for single-label multi-class classification)
-def single_activity_accuracy(outputs, labels, debugging_details=False):
-    #print(f"single_activity_accuracy: outputs.shape = {outputs.shape} labels.shape = {labels.shape}")
-    #print(f"single_activity_accuracy: outputs = {outputs}")
+# outputs: the model outputs
+# labels: the ground truth labels
+# debugging_details: if True, return mismatched_labels and mismatched_names if image_names is not None
+# image_names: if not None, the image names for debugging if you want to show the mismatched image names
+def single_activity_accuracy(outputs, labels, debugging_details=False, image_names=None):
     #print(f"single_activity_labels: labels = {labels}")
     _, predicted = torch.max(outputs, 1)
     correct = (predicted == labels).sum().item()
@@ -36,20 +38,22 @@ def single_activity_accuracy(outputs, labels, debugging_details=False):
     accuracy = correct / total
 
     mismatched_labels = None
+    mismatched_indices = None
+    mismatched_names = None
     if (debugging_details == True):
         idxs_mask = (predicted != labels.view_as(predicted)).view(-1)
         #print(f"idxs_mask = {idxs_mask}")
         mismatched_labels = []
         if idxs_mask.numel():
             mismatched_labels = labels[idxs_mask].cpu().numpy()
-
-        # # collect the mismatched labels and outputs
-        # mismatched_labels = []
-        # for i in range(len(labels)):
-        #     if (predicted[i] != labels[i]):
-        #         mismatched_labels.append(labels[i].item())
-        
-    return accuracy, mismatched_labels
+            
+            if (image_names is not None):
+                mismatched_names = {}
+                labels_np = labels.cpu().numpy().astype(int)
+                mismatched_indices = idxs_mask.nonzero().squeeze().cpu().numpy()
+                # insert mismatched image names as keys and mismatched labels as values to the mismatched_names dictionary
+                mismatched_names = {image_names[i]: labels_np[i] for i in mismatched_indices}
+    return accuracy, mismatched_labels, mismatched_names
 
 def exact_match_accuracy(outputs, labels, threshold=0.5):
     # Convert outputs to binary predictions based on the threshold
@@ -88,7 +92,7 @@ def train_one_epoch(epoch_number, model, train_loader, optimizer, criterion, dev
 
         running_loss += loss.item()
         if (args.dataset == 'youhome_activity'):
-            accuracy, _ = single_activity_accuracy(outputs, labels)
+            accuracy, _, _ = single_activity_accuracy(outputs, labels)
         else:
             accuracy = exact_match_accuracy(outputs, labels)
         total_accuracy += accuracy
@@ -118,7 +122,7 @@ def eval_one_epoch(epoch_number, model, eval_loader, criterion, device):
         
         running_loss += loss.item()
         if (args.dataset == 'youhome_activity'):
-            accuracy, _ = single_activity_accuracy(outputs, labels)
+            accuracy, _, _ = single_activity_accuracy(outputs, labels)
         else:
             accuracy = exact_match_accuracy(outputs, labels)
         total_accuracy += accuracy
@@ -135,26 +139,41 @@ def eval_one_epoch(epoch_number, model, eval_loader, criterion, device):
     return running_loss, total_accuracy
 
 # count the number of mismatched labels for each label
-def summarize_mismatched_labels(mismatched_labels):
+def get_mismatched_labels_stats(mismatched_labels):
     mismatched_labels_dict = {}
     for label in mismatched_labels:
         if label in mismatched_labels_dict:
             mismatched_labels_dict[label] += 1
         else:
             mismatched_labels_dict[label] = 1
-    print(f"Summarized mismatched labels: {mismatched_labels_dict}")
-    
-def run_testing(model, test_loader, criterion, device, debugging_details=False):
-    # TODO(load the best model)
+    # sort the dictionary by the value in descending order
+    mismatched_labels_dict = dict(sorted(mismatched_labels_dict.items(), key=lambda item: item[1], reverse=True))
+
+    return mismatched_labels_dict
+
+# return a dictionary where the key is the mismatched label and the value is a list of mismatched image names
+# mismatched_imange_names: a dictionary of mismatched image names by labels
+def get_mismatched_image_names_by_labels(mismatched_image_names):
+    mismatched_image_names_by_labels = {}
+    for image_name, label in mismatched_image_names.items():
+        if label in mismatched_image_names_by_labels:
+            mismatched_image_names_by_labels[label].append(image_name)
+        else:
+            mismatched_image_names_by_labels[label] = [image_name]
+    return mismatched_image_names_by_labels
+
+def run_testing(model, test_loader, criterion, device, debugging_details=False, save_debugging_to_gdrive=False, file_suffix=""):
     model.eval()
     test_loss = 0.0
     test_accuracy = 0.0
 
     mismatched_labels = np.array([])
+    mismatched_imange_names = {}
     with torch.no_grad():
         progress_bar = tqdm(test_loader, desc="Testing", leave=False)
         for batch in progress_bar:
-            inputs, labels = batch['image'].to(device), batch['labels'].to(device).float()
+            inputs, labels, image_names = batch['image'].to(device), batch['labels'].to(device).float(), batch['name']
+            #print(f"run_testing names: {image_names}")
              #(TODO) test whether we need to squeeze the labels for singleactivity classification
             labels = labels.squeeze(1).long()
             outputs = model(inputs)
@@ -162,9 +181,11 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False):
             test_loss += loss.item()
             if (args.dataset == 'youhome_activity'):
                 mismatched_labels_in_batch = []
-                accuracy, mismatched_labels_in_batch = single_activity_accuracy(outputs, labels, debugging_details)
+                accuracy, mismatched_labels_in_batch, mismatched_image_names_in_batch = single_activity_accuracy(outputs, labels, debugging_details, image_names)
                 if (mismatched_labels_in_batch is not None and len(mismatched_labels_in_batch) > 0):
                     mismatched_labels = np.concatenate((mismatched_labels, mismatched_labels_in_batch))
+                if (mismatched_image_names_in_batch is not None and len(mismatched_image_names_in_batch) > 0):
+                    mismatched_imange_names.update(mismatched_image_names_in_batch)
             else:
                 accuracy = exact_match_accuracy(outputs, labels)
             test_accuracy += accuracy
@@ -172,9 +193,36 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False):
             progress_bar.set_postfix(test_loss=test_loss/(progress_bar.n + 1), accuracy=100. * test_accuracy/(progress_bar.n + 1))
 
     print(f'Test Loss: {test_loss / len(test_loader):.4f}, Accuracy: {100. * test_accuracy / len(test_loader):.2f}%')
+
+    mismatched_labels_stats = None
+    mismatched_image_names_by_labels = None
     if (debugging_details == True):
         print(f"Mismatched labels: {mismatched_labels}")
-        summarize_mismatched_labels(mismatched_labels)
+        mismatched_image_names_by_labels = get_mismatched_image_names_by_labels(mismatched_imange_names) 
+        mismatched_labels_stats = get_mismatched_labels_stats(mismatched_labels)
+        # if (save_debugging_to_gdrive == True):
+        #     save_debugging_info_dir = "/content/drive/MyDrive/sabella/research/models/"
+        # else :
+        #     save_debugging_info_dir = "./"
+        # torch.save(mismatched_labels_stats, f"{save_debugging_info_dir}mismatched_labels_stats_{start_timestamp}")
+        # torch.save(mismatched_image_names_by_labels, f"{save_debugging_info_dir}mismatched_image_names_by_labels_{start_timestamp}")
+    model_testing_result = ModelTestingResult(
+        loss=test_loss / len(test_loader),
+        accuracy=100. * test_accuracy / len(test_loader),
+        mismatched_label_stats=mismatched_labels_stats,
+        mismatched_label_images=mismatched_image_names_by_labels
+    )
+    print(f"Model Testing Result: {model_testing_result}")
+
+    if (save_debugging_to_gdrive == True):
+        save_debugging_info_dir = "/content/drive/MyDrive/sabella/research/models/"
+    else:
+        save_debugging_info_dir = "./"
+
+    with open(f"{save_debugging_info_dir}model_testing_result_{file_suffix}.txt", "w") as f:
+        f.write(str(model_testing_result))
+
+    return model_testing_result    
 
 if __name__ == "__main__":  
     if torch.cuda.is_available():
@@ -255,10 +303,12 @@ if __name__ == "__main__":
         criterion = nn.BCELoss()
 
 
+    start_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
     # step 5: train the model and run testing
     # step 5.1: run testing only if the flag is set
     if (args.run_testing_only == True):
-        run_testing(model, test_loader, criterion, device, args.dump_testing_details)
+        result = run_testing(model, test_loader, criterion, device, args.dump_testing_details, args.save_debugging_to_gdrive, start_timestamp)
         exit()
 
     # step 5.2: train the model and run testing
@@ -272,8 +322,6 @@ if __name__ == "__main__":
     best_loss = np.inf
     no_improvement = 0
 
-    start_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    
     for epoch in range(num_epochs):
         model.train()
         running_loss, running_accuracy = train_one_epoch(epoch, model, train_loader, optimizer, criterion, device)
@@ -353,4 +401,5 @@ if __name__ == "__main__":
     # step 5.3: run testing
     #load the best model saved earlier for testing
     model.load_state_dict(torch.load("best_model.pth"))
-    run_testing(model, test_loader, criterion, device, args.dump_testing_details)
+    run_testing(model, test_loader, criterion, device, args.dump_testing_details, 
+                args.save_debugging_to_gdrive, start_timestamp)
