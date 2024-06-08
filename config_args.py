@@ -8,16 +8,16 @@ def get_args(parser, eval=False):
     parser.add_argument('--dataroot', type=str, default='./data/')
     # if run_testing_only is True, then the model will be loaded from the saved model and run testing only.
     parser.add_argument('--run_testing_only', type=bool, default=False)
-    parser.add_argument('--dump_testing_details', type=bool, default=False)
-    parser.add_argument('--save_debugging_to_gdrive', type=bool, default=False)
+    parser.add_argument('--dump_testing_details', type=bool, default=True)
+    parser.add_argument('--save_debugging_to_gdrive', type=bool, default=True)
     
 
-    parser.add_argument('--load_saved_model', type=bool, default=True)
+    parser.add_argument('--load_saved_model', type=bool, default=False)
     parser.add_argument('--load_from_saved_model_name', type=str, default='best_model.pth')
     parser.add_argument('--save_best_model_to_gdrive', type=bool, default=True)
-    parser.add_argument('--batch_size', type=int, default=128) # 32 best for T4, 128 best for L4
-    parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--workers', type=int, default=20) # 10 best for T4, 20 best for L4
+    parser.add_argument('--batch_size', type=int, default=32) # 32 best for T4, 128 best for L4
+    parser.add_argument('--epochs', type=int, default=5)
+    parser.add_argument('--workers', type=int, default=10) # 10 best for T4, 20 best for L4
 
     parser.add_argument('--dataset', type=str,
                         choices=['coco', 'voc', 'coco1000', 'nus', 'vg', 'news', 'cub', 'youhome_multi', 'youhome_activity',

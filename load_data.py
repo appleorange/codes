@@ -108,11 +108,11 @@ def get_data(args):
                                                 transforms.RandomCrop(320)
                                             ]),
                                             transforms.Resize((crop_size, crop_size)),
-                                            transforms.RandomChoice([
-                                                transforms.RandomHorizontalFlip()#,
+                                            #transforms.RandomChoice([
+                                            transforms.RandomHorizontalFlip(),
                                                 #transforms.RandomVerticalFlip()
                                                 #transforms.RandomRotation(90),
-                                            ]),
+                                            #]),
                                             # transforms.RandomChoice([
                                             #     transforms.v2.RandomPhotometricDistort(),
                                             #     transforms.v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.))
@@ -173,9 +173,12 @@ def get_data(args):
         exit(0)
 
     if train_dataset is not None:
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, #shuffle=True, 
+        # train_loader = DataLoader(train_dataset, batch_size=batch_size, #shuffle=True, 
+        #                           num_workers=workers,
+        #                           sampler=getYouHomeSampler(train_dataset),
+        #                           drop_last=drop_last)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, 
                                   num_workers=workers,
-                                  sampler=getYouHomeSampler(train_dataset),
                                   drop_last=drop_last)
     # if valid_dataset is not None:
     #     valid_loader = DataLoader(valid_dataset, batch_size=args.test_batch_size, shuffle=False, num_workers=workers)
