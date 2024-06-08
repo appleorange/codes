@@ -185,7 +185,7 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
     test_loss = 0.0
     test_accuracy = 0.0
 
-    confusion_matrix_metric = torchmetrics.ConfusionMatrix(task="multiclass", num_classes=45)
+    confusion_matrix_metric = torchmetrics.ConfusionMatrix(task="multiclass", num_classes=45).to(device)
     mismatched_labels = np.array([])
     mismatched_imange_names = {}
     with torch.no_grad():
