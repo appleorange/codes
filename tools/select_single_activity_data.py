@@ -72,13 +72,17 @@ os.system(f"rm -rf data/*")
 os.system(f"mkdir -p data/train/image")
 os.system(f"mkdir -p data/train/label")
 os.system(f"mkdir -p data/test/image")
-os.system(f"mkdir -p data/test/label")  
+os.system(f"mkdir -p data/test/label")
+os.system(f"mkdir -p data/val/image")
+os.system(f"mkdir -p data/val/label")  
+
+total_examples = 100000
 
 for name in glob(os.path.join("cropped_label", "*.json")):
     num_files += 1
     basename = name.split('/')[-1]
-    if num_single_activies < 30000:
-        if num_files % 100 == 0:
+    if num_single_activies < total_examples:
+        if num_files % 1000 == 0:
             print(name + " " + basename)
     else:
         break
@@ -100,8 +104,10 @@ for name in glob(os.path.join("cropped_label", "*.json")):
             num_single_activies += 1
 
             dir_name = ""
-            if (num_single_activies % 100 < 80):
+            if (num_single_activies % 100 < 65):
                 dir_name = "data/train"
+            elif (num_single_activies % 100 < 80):
+                dir_name = "data/val"
             else:
                 dir_name = "data/test"
 
@@ -115,7 +121,7 @@ for name in glob(os.path.join("cropped_label", "*.json")):
             image_name = basename[:-4] + "jpg"
             os.system(f"cp cropped_image/{image_name} {dir_name}/image/{image_name}")  
         else:
-            if (num_files % 100 == 0):
+            if (num_files % 1000 == 0):
                 print(f"!skip: multiple activities {num_activities} vs. data['num_activities'] {data['num_activities']}")
 
 print(f"total files {num_files}, single activity files {num_single_activies}")

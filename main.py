@@ -210,7 +210,7 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
             progress_bar.set_postfix(test_loss=test_loss/(progress_bar.n + 1), accuracy=100. * test_accuracy/(progress_bar.n + 1))
 
     if (save_debugging_to_gdrive == True):
-        save_debugging_info_dir = "/content/drive/MyDrive/sabella/research/models/"
+        save_debugging_info_dir = "/content/drive/MyDrive/UIUC_research/models/"
     else:
         save_debugging_info_dir = "./"
 
@@ -365,7 +365,7 @@ if __name__ == "__main__":
             torch.save(model.state_dict(), "best_model.pth")
             #save the model to google drive with the current timestamp and epoch number as the suffix.
             if (args.save_best_model_to_gdrive == True):
-                torch.save(model.state_dict(), f"/content/drive/MyDrive/sabella/research/models/best_model_{start_timestamp}")
+                torch.save(model.state_dict(), f"/content/drive/MyDrive/UIUC_research/models/best_model_{start_timestamp}")
             
             print(f"Model saved to best_model.pth")
         # # Set the model to evaluation mode, disabling dropout and using population
@@ -408,11 +408,11 @@ if __name__ == "__main__":
     print(f"vaccuracy_history = {vaccuracy_history}")
 
     if (args.save_best_model_to_gdrive == True):
-        plt_save_dir = "/content/drive/MyDrive/sabella/research/models/"
-        torch.save(accuracy_history, f"/content/drive/MyDrive/sabella/research/models/accuracy_history_{start_timestamp}.pt")
-        torch.save(loss_history, f"/content/drive/MyDrive/sabella/research/models/loss_history_{start_timestamp}.pt")
-        torch.save(vaccuracy_history, f"/content/drive/MyDrive/sabella/research/models/vaccuracy_history_{start_timestamp}.pt")
-        torch.save(vloss_history, f"/content/drive/MyDrive/sabella/research/models/vloss_history_{start_timestamp}.pt")
+        plt_save_dir = "/content/drive/MyDrive/UIUC_research/models/"
+        torch.save(accuracy_history, f"/content/drive/MyDrive/UIUC_research/models/accuracy_history_{start_timestamp}.pt")
+        torch.save(loss_history, f"/content/drive/MyDrive/UIUC_research/models/loss_history_{start_timestamp}.pt")
+        torch.save(vaccuracy_history, f"/content/drive/MyDrive/UIUC_research/models/vaccuracy_history_{start_timestamp}.pt")
+        torch.save(vloss_history, f"/content/drive/MyDrive/UIUC_research/models/vloss_history_{start_timestamp}.pt")
     else:
         plt_save_dir = "./"
     plt_save_destionation = f"{plt_save_dir}loss_history_{start_timestamp}.png"
