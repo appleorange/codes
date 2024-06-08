@@ -37,6 +37,8 @@ def single_activity_accuracy(outputs, labels, confusion_matrix=None, debugging_d
     _, predicted = torch.max(outputs, 1)
     correct = (predicted == labels).sum().item()
     if (confusion_matrix is not None):
+        #get the device of the labels tensor
+        print(f"labels device = {labels.device};  predicted device = {predicted.device}")
         confusion_matrix(predicted, labels)
     total = labels.size(0)
     accuracy = correct / total
@@ -192,7 +194,7 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
             inputs, labels, image_names = batch['image'].to(device), batch['labels'].to(device).float(), batch['name']
             #print(f"run_testing names: {image_names}")
              #(TODO) test whether we need to squeeze the labels for singleactivity classification
-            labels = labels.squeeze(1).long()
+            labels = labels.squeeze(1).long().to(device)
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             test_loss += loss.item()
