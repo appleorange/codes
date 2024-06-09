@@ -118,30 +118,31 @@ def eval_one_epoch(epoch_number, model, eval_loader, criterion, device):
     model.eval()
     running_loss = 0.0
     total_accuracy = 0.0
-    progress_bar = tqdm(eval_loader, desc="Eval", leave=False)
-    for batch in progress_bar:
-        inputs, labels = batch['image'].to(device), batch['labels'].to(device).float()
-        #(TODO) test whether we need to squeeze the labels for singleactivity classification
-        labels = labels.squeeze(1).long()
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        
-        running_loss += loss.item()
-        if (args.dataset == 'youhome_activity'):
-            accuracy, _, _ = single_activity_accuracy(outputs, labels)
-        else:
-            accuracy = exact_match_accuracy(outputs, labels)
-        total_accuracy += accuracy
+    with torch.no_grad():
+        progress_bar = tqdm(eval_loader, desc="Eval", leave=False)
+        for batch in progress_bar:
+            inputs, labels = batch['image'].to(device), batch['labels'].to(device).float()
+            #(TODO) test whether we need to squeeze the labels for singleactivity classification
+            labels = labels.squeeze(1).long()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            
+            running_loss += loss.item()
+            if (args.dataset == 'youhome_activity'):
+                accuracy, _, _ = single_activity_accuracy(outputs, labels)
+            else:
+                accuracy = exact_match_accuracy(outputs, labels)
+            total_accuracy += accuracy
 
-        # print outputs if the batch is the first one
-        # if progress_bar.n == 0:
-        #     print(f"Outputs: {outputs}")
-        #     print(f"Labels: {labels}")
-        #     print(f"Loss: {loss}")
-        #     print(f"Accuracy: {accuracy}")
+            # print outputs if the batch is the first one
+            # if progress_bar.n == 0:
+            #     print(f"Outputs: {outputs}")
+            #     print(f"Labels: {labels}")
+            #     print(f"Loss: {loss}")
+            #     print(f"Accuracy: {accuracy}")
 
-        progress_bar.set_postfix(loss=running_loss/(progress_bar.n + 1), accuracy=100. * total_accuracy/(progress_bar.n + 1))
-        # Remember this is percentage
+            progress_bar.set_postfix(loss=running_loss/(progress_bar.n + 1), accuracy=100. * total_accuracy/(progress_bar.n + 1))
+            # Remember this is percentage
     return running_loss, total_accuracy
 
 # count the number of mismatched labels for each label
