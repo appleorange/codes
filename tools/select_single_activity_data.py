@@ -67,6 +67,29 @@ def plotData(label_histgram, title):
 
 num_files = 0
 num_single_activies = 0
+total_examples = 300000
+
+current_test_set = set([])
+
+current_train_set = set([])
+
+current_val_set = set([])
+
+for name in glob(os.path.join("data65k/data/test/label", "*.json")):
+    basename = name.split('/')[-1]
+    #print(basename[:-5])
+    current_test_set.add(basename)
+
+for name in glob(os.path.join("data65k/data/train/label", "*.json")):
+    basename = name.split('/')[-1]
+    #print(basename[:-5])
+    current_train_set.add(basename)
+
+for name in glob(os.path.join("data65k/data/val/label", "*.json")):
+    basename = name.split('/')[-1]
+    #print(basename[:-5])
+    current_val_set.add(basename)
+
 
 os.system(f"rm -rf data/*")  
 os.system(f"mkdir -p data/train/image")
@@ -76,7 +99,6 @@ os.system(f"mkdir -p data/test/label")
 os.system(f"mkdir -p data/val/image")
 os.system(f"mkdir -p data/val/label")  
 
-total_examples = 100000
 
 for name in glob(os.path.join("cropped_label", "*.json")):
     num_files += 1
@@ -104,9 +126,15 @@ for name in glob(os.path.join("cropped_label", "*.json")):
             num_single_activies += 1
 
             dir_name = ""
-            if (num_single_activies % 100 < 65):
+            if (name in current_train_set):
                 dir_name = "data/train"
-            elif (num_single_activies % 100 < 80):
+            elif (name in current_val_set):
+                dir_name = "data/val"
+            elif (name in current_test_set):   
+                dir_name = "data/test"
+            elif (num_single_activies % 100 < 70):
+                dir_name = "data/train"
+            elif (num_single_activies % 100 < 80 ):
                 dir_name = "data/val"
             else:
                 dir_name = "data/test"
