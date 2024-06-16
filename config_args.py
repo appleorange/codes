@@ -15,9 +15,9 @@ def get_args(parser, eval=False):
     parser.add_argument('--load_saved_model', type=bool, default=False)
     parser.add_argument('--load_from_saved_model_name', type=str, default='best_model.pth')
     parser.add_argument('--save_best_model_to_gdrive', type=bool, default=True)
-    parser.add_argument('--batch_size', type=int, default=32) # 32 best for T4, 128 best for L4
-    parser.add_argument('--epochs', type=int, default=5)
-    parser.add_argument('--workers', type=int, default=10) # 10 best for T4, 20 best for L4
+    parser.add_argument('--batch_size', type=int, default=80) # 32 best for T4, 128 best for L4
+    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--workers', type=int, default=24) # 24 best for T4 high memory, 20 best for L4
 
     parser.add_argument('--dataset', type=str,
                         choices=['coco', 'voc', 'coco1000', 'nus', 'vg', 'news', 'cub', 'youhome_multi', 'youhome_activity',

@@ -324,6 +324,7 @@ if __name__ == "__main__":
         weights = torch.ones(num_labels)
         weights[[44, 5]] = 2
         weights[38] = 4
+        weights.to(device)
         criterion = nn.CrossEntropyLoss(weight=weights)
     else:
         criterion = nn.BCELoss()
