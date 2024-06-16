@@ -321,7 +321,10 @@ if __name__ == "__main__":
     # (TODO: shall we use nn.CELoss for activiticy classification?)
     criterion = nn.CrossEntropyLoss()
     if (args.dataset == 'youhome_activity'):
-        criterion = nn.CrossEntropyLoss()
+        weights = torch.ones(num_labels)
+        weights[[44, 5]] = 2
+        weights[38] = 4
+        criterion = nn.CrossEntropyLoss(weight=weights)
     else:
         criterion = nn.BCELoss()
 
