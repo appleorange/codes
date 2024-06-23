@@ -2,3 +2,10 @@
 /__pycache__
 /result
 /test.js
+
+# Ignore all .log files
+*.csv
+
+# Ignore a specific directory
+test/
+

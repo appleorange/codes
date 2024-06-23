@@ -10,6 +10,10 @@ def get_args(parser, eval=False):
     parser.add_argument('--run_testing_only', type=bool, default=False)
     parser.add_argument('--dump_testing_details', type=bool, default=True)
     parser.add_argument('--save_debugging_to_gdrive', type=bool, default=True)
+
+    # a number of pretrained models are available in torchvision.models
+    # resnet18, resnet34, resnet50, efficientnet-b0, efficientnet-b1, efficientnet-b2, efficientnet-b3, efficientnet_v2s, efficientnet_v2m
+    parser.add_argument('--model', type=str, default='resnet18')
     
 
     parser.add_argument('--load_saved_model', type=bool, default=False)

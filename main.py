@@ -299,8 +299,27 @@ if __name__ == "__main__":
 
     num_labels = args.num_labels
 
+    model = None
     # step 3: load or create model
-    model = models.resnet18(pretrained=True)
+    if (args.model == 'resnet18'):
+        model = models.resnet18(pretrained=True)
+    elif (args.model == 'resnet34'):
+        model = models.resnet34(pretrained=True)
+    elif (args.model == 'resnet50'):
+        model = models.resnet50(pretrained=True)
+    elif (args.model == 'efficientnet-b0'):
+        model = models.efficientnet_b0(pretrained=True)
+    elif (args.model == 'efficientnet-b1'):
+        model = models.efficientnet_b1(pretrained=True)
+    elif (args.model == 'efficientnet-b2'):
+        model = models.efficientnet_b2(pretrained=True)
+    elif (args.model == 'efficientnet_v2s'):
+        model = models.efficientnet_v2s(pretrained=True)
+    elif (args.model == 'efficientnet_v2m'):
+        model = models.efficientnet_v2m(pretrained=True)
+    else:
+        raise ValueError("Model not supported")
+    
     if (args.dataset == 'youhome_activity'):
         model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels))
     else:
@@ -321,11 +340,12 @@ if __name__ == "__main__":
     # (TODO: shall we use nn.CELoss for activiticy classification?)
     criterion = nn.CrossEntropyLoss()
     if (args.dataset == 'youhome_activity'):
-        weights = torch.ones(num_labels)
-        weights[[44, 5]] = 2
-        weights[38] = 4
-        weights = weights.to(device)
-        criterion = nn.CrossEntropyLoss(weight=weights)
+        #weights = torch.ones(num_labels)
+        #weights[[44, 5]] = 2
+        #weights[38] = 4
+        #weights = weights.to(device)
+        #criterion = nn.CrossEntropyLoss(weight=weights)
+        criterion = nn.CrossEntropyLoss()
     else:
         criterion = nn.BCELoss()
 
