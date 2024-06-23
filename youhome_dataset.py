@@ -62,13 +62,13 @@ class YouHomeDataset(torch.utils.data.Dataset):
             img_name = name.split("/")[-1][:-4]
             self.img_names.append(img_name)
             label_file = os.path.join(self.labels_path, img_name+ '.json')
-            label_vector = np.zeros(self.num_labels)
+            label_vector = np.zeros(self.num_labels, dtype=int)
 
             #print(f"open file {img_name}")
             
             with open(label_file) as f:
                 data = json.load(f)
-                label_vector[0] = data['activity_label']
+                label_vector[0] = int(data['activity_label'])
 
             self.labels.append(label_vector)
         self.labels = np.array(self.labels).astype(int)

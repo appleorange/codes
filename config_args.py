@@ -19,9 +19,11 @@ def get_args(parser, eval=False):
     parser.add_argument('--load_saved_model', type=bool, default=False)
     parser.add_argument('--load_from_saved_model_name', type=str, default='best_model.pth')
     parser.add_argument('--save_best_model_to_gdrive', type=bool, default=True)
-    parser.add_argument('--batch_size', type=int, default=80) # 32 best for T4, 128 best for L4
+    #resnet18: 80, *, 60 # 32 best for T4, 128 best for L4
+    #resnet34: 64, *, 32
+    parser.add_argument('--batch_size', type=int, default=16) # 32 best for T4, 128 best for L4
     parser.add_argument('--epochs', type=int, default=30)
-    parser.add_argument('--workers', type=int, default=24) # 24 best for T4 high memory, 20 best for L4
+    parser.add_argument('--workers', type=int, default=10) # 24 best for T4 high memory, 20 best for L4
 
     parser.add_argument('--dataset', type=str,
                         choices=['coco', 'voc', 'coco1000', 'nus', 'vg', 'news', 'cub', 'youhome_multi', 'youhome_activity',
@@ -53,7 +55,7 @@ def get_args(parser, eval=False):
 
     # Image Sizes
     parser.add_argument('--scale_size', type=int, default=640)
-    parser.add_argument('--crop_size', type=int, default=576)
+    parser.add_argument('--crop_size', type=int, default=384) #384 576 640
 
     # Testing Models
     parser.add_argument('--inference', action='store_true')

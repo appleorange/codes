@@ -278,7 +278,7 @@ if __name__ == "__main__":
         # print samples of the train loader to check if the data is loaded correctly
         for i, data in enumerate(train_loader):
             print(f"Sample {i+1}: image shape = {data['image'].shape}, label shape = {data['labels'].shape}")
-            print(f"Labels: {data['labels']}")
+            print(f"Labels: {data['labels'].dtype} {data['labels']}")
             if i == 2:
                 break
     
@@ -301,30 +301,41 @@ if __name__ == "__main__":
 
     model = None
     # step 3: load or create model
-    if (args.model == 'resnet18'):
-        model = models.resnet18(pretrained=True)
-    elif (args.model == 'resnet34'):
-        model = models.resnet34(pretrained=True)
-    elif (args.model == 'resnet50'):
-        model = models.resnet50(pretrained=True)
-    elif (args.model == 'efficientnet-b0'):
-        model = models.efficientnet_b0(pretrained=True)
-    elif (args.model == 'efficientnet-b1'):
-        model = models.efficientnet_b1(pretrained=True)
-    elif (args.model == 'efficientnet-b2'):
-        model = models.efficientnet_b2(pretrained=True)
-    elif (args.model == 'efficientnet_v2s'):
-        model = models.efficientnet_v2s(pretrained=True)
-    elif (args.model == 'efficientnet_v2m'):
-        model = models.efficientnet_v2m(pretrained=True)
-    else:
-        raise ValueError("Model not supported")
     
-    if (args.dataset == 'youhome_activity'):
-        model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels))
+    if (args.dataset == 'youhome_activity'): 
+        if (args.model == 'resnet18'):
+            model = models.resnet18(pretrained=True)
+            model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels))
+        elif (args.model == 'resnet34'):
+            model = models.resnet34(pretrained=True)
+            model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels))
+        elif (args.model == 'resnet50'):
+            model = models.resnet50(pretrained=True)
+            model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels))
+        elif (args.model == 'efficientnet-b0'):
+            model = models.efficientnet_b0(pretrained=True)
+            model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
+        elif (args.model == 'efficientnet-b1'):
+            model = models.efficientnet_b1(pretrained=True)
+            model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
+        elif (args.model == 'efficientnet-b2'):
+            model = models.efficientnet_b2(pretrained=True)
+            model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
+        elif (args.model == 'efficientnet_v2s'):
+            model = models.efficientnet_v2_s(pretrained=True)
+            model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
+        elif (args.model == 'efficientnet_v2m'):
+            model = models.efficientnet_v2_m(pretrained=True)
+            model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
+        else:
+            raise ValueError("Model not supported") 
     else:
         #The original FC layer is replaced with a new one that has num_labels outputs and a sigmoid activation function.
         model.fc = nn.Sequential(nn.Linear(model.fc.in_features, num_labels), nn.Sigmoid())  # num_labels to be defined based on your dataset
+    
+    # print("*******************************************************")
+    # print(model)
+    # exit()
 
     if (args.load_saved_model == True and args.load_from_saved_model_name != ''):
         print(f"Loading model from {args.load_from_saved_model_name}")
