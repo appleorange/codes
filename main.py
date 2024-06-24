@@ -56,7 +56,11 @@ def single_activity_accuracy(outputs, labels, confusion_matrix=None, debugging_d
             if (image_names is not None):
                 mismatched_names = {}
                 labels_np = labels.cpu().numpy().astype(int)
-                mismatched_indices = idxs_mask.nonzero().squeeze().cpu().numpy()
+                #mismatched_indices = idxs_mask.nonzero().squeeze().cpu().numpy()
+                # Adjusted to ensure mismatched_indices is always an iterable array
+                mismatched_indices = idxs_mask.nonzero().squeeze(-1).cpu().numpy()
+                if mismatched_indices.ndim == 0:
+                    mismatched_indices = np.expand_dims(mismatched_indices, 0)
                 # insert mismatched image names as keys and mismatched labels as values to the mismatched_names dictionary
                 mismatched_names = {image_names[i]: labels_np[i] for i in mismatched_indices}
     return accuracy, mismatched_labels, mismatched_names
@@ -232,8 +236,8 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
         #     save_debugging_info_dir = "/content/drive/MyDrive/sabella/research/models/"
         # else :
         #     save_debugging_info_dir = "./"
-        # torch.save(mismatched_labels_stats, f"{save_debugging_info_dir}mismatched_labels_stats_{start_timestamp}")
-        # torch.save(mismatched_image_names_by_labels, f"{save_debugging_info_dir}mismatched_image_names_by_labels_{start_timestamp}")
+        # torch.save(mismatched_labels_stats, f"{save_debugging_info_dir}mismatched_labels_stats_{suffix}")
+        # torch.save(mismatched_image_names_by_labels, f"{save_debugging_info_dir}mismatched_image_names_by_labels_{suffix}")
     model_testing_result = ModelTestingResult(
         loss=test_loss / len(test_loader),
         accuracy=100. * test_accuracy / len(test_loader),
@@ -362,7 +366,7 @@ if __name__ == "__main__":
 
 
     start_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    
+    suffix = f"model_{args.model}_{start_timestamp}"
     # step 5: train the model and run testing
     # step 5.1: run testing only if the flag is set
     if (args.run_testing_only == True):
@@ -403,7 +407,7 @@ if __name__ == "__main__":
             torch.save(model.state_dict(), "best_model.pth")
             #save the model to google drive with the current timestamp and epoch number as the suffix.
             if (args.save_best_model_to_gdrive == True):
-                torch.save(model.state_dict(), f"/content/drive/MyDrive/UIUC_research/models/best_model_{start_timestamp}")
+                torch.save(model.state_dict(), f"/content/drive/MyDrive/UIUC_research/models/best_model_{suffix}")
             
             print(f"Model saved to best_model.pth")
         # # Set the model to evaluation mode, disabling dropout and using population
@@ -447,13 +451,13 @@ if __name__ == "__main__":
 
     if (args.save_best_model_to_gdrive == True):
         plt_save_dir = "/content/drive/MyDrive/UIUC_research/models/"
-        torch.save(accuracy_history, f"/content/drive/MyDrive/UIUC_research/models/accuracy_history_{start_timestamp}.pt")
-        torch.save(loss_history, f"/content/drive/MyDrive/UIUC_research/models/loss_history_{start_timestamp}.pt")
-        torch.save(vaccuracy_history, f"/content/drive/MyDrive/UIUC_research/models/vaccuracy_history_{start_timestamp}.pt")
-        torch.save(vloss_history, f"/content/drive/MyDrive/UIUC_research/models/vloss_history_{start_timestamp}.pt")
+        torch.save(accuracy_history, f"/content/drive/MyDrive/UIUC_research/models/accuracy_history_{suffix}.pt")
+        torch.save(loss_history, f"/content/drive/MyDrive/UIUC_research/models/loss_history_{suffix}.pt")
+        torch.save(vaccuracy_history, f"/content/drive/MyDrive/UIUC_research/models/vaccuracy_history_{suffix}.pt")
+        torch.save(vloss_history, f"/content/drive/MyDrive/UIUC_research/models/vloss_history_{suffix}.pt")
     else:
         plt_save_dir = "./"
-    plt_save_destionation = f"{plt_save_dir}loss_history_{start_timestamp}.png"
+    plt_save_destionation = f"{plt_save_dir}loss_history_{suffix}.png"
     plot_training_results(accuracy_history, vaccuracy_history, loss_history, vloss_history, "Training Loss and Accuracy History", plt_save_destionation)
     
     # step 5.3: run testing
