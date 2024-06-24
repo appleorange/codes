@@ -367,6 +367,11 @@ if __name__ == "__main__":
 
     start_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     suffix = f"model_{args.model}_{start_timestamp}"
+    # save all the args to a log file in gdrive
+    if (args.save_best_model_to_gdrive == True):
+        with open(f"/content/drive/MyDrive/UIUC_research/models/args_{suffix}.log", "w") as f:
+            f.write(str(args))
+
     # step 5: train the model and run testing
     # step 5.1: run testing only if the flag is set
     if (args.run_testing_only == True):
