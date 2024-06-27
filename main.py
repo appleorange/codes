@@ -325,6 +325,9 @@ if __name__ == "__main__":
         elif (args.model == 'efficientnet-b2'):
             model = models.efficientnet_b2(pretrained=True)
             model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
+        elif (args.model == 'efficientnet-b3'):
+            model = models.efficientnet_b3(pretrained=True)
+            model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
         elif (args.model == 'efficientnet_v2s'):
             model = models.efficientnet_v2_s(pretrained=True)
             model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
