@@ -358,12 +358,19 @@ if __name__ == "__main__":
     # (TODO: shall we use nn.CELoss for activiticy classification?)
     criterion = nn.CrossEntropyLoss()
     if (args.dataset == 'youhome_activity'):
-        #weights = torch.ones(num_labels)
-        #weights[[44, 5]] = 2
-        #weights[38] = 4
-        #weights = weights.to(device)
-        #criterion = nn.CrossEntropyLoss(weight=weights)
-        criterion = nn.CrossEntropyLoss()
+        weights = torch.ones(num_labels)
+        #38.0: 449, 3.0: 180, 44.0: 178, 5.0: 164, 43.0: 140, 2.0: 135, 0.0: 107, 17.0
+        #weights[[3, 44, 5, 43, 2, 0]] = 2
+        weights[38] = 4.49
+        weights[3] = 1.8
+        weights[44] = 1.78
+        weights[5] = 1.64
+        weights[43] = 1.4
+        weights[2] = 1.35
+        weights[0] = 1.07
+        weights = weights.to(device)
+        criterion = nn.CrossEntropyLoss(weight=weights)
+        #criterion = nn.CrossEntropyLoss()
     else:
         criterion = nn.BCELoss()
 
