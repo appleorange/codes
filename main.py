@@ -36,6 +36,9 @@ def single_activity_accuracy(outputs, labels, confusion_matrix=None, debugging_d
     #print(f"single_activity_labels: labels = {labels}")
     _, predicted = torch.max(outputs, 1)
     correct = (predicted == labels).sum().item()
+    #print(f"predicted: {predicted}")
+    #print(f"labels: {labels}")
+    #print(f"correct: {correct}")
     if (confusion_matrix is not None):
         #get the device of the labels tensor
         print(f"labels device = {labels.device};  predicted device = {predicted.device}")
@@ -46,24 +49,32 @@ def single_activity_accuracy(outputs, labels, confusion_matrix=None, debugging_d
     mismatched_labels = None
     mismatched_indices = None
     mismatched_names = None
+    mismatched_names_details = None
+
     if (debugging_details == True):
         idxs_mask = (predicted != labels.view_as(predicted)).view(-1)
         #print(f"idxs_mask = {idxs_mask}")
         mismatched_labels = []
+        mismatched_names_details = []
+
         if idxs_mask.numel():
             mismatched_labels = labels[idxs_mask].cpu().numpy()
             
             if (image_names is not None):
                 mismatched_names = {}
                 labels_np = labels.cpu().numpy().astype(int)
+                predicted_np = predicted.cpu().numpy().astype(int)
                 #mismatched_indices = idxs_mask.nonzero().squeeze().cpu().numpy()
                 # Adjusted to ensure mismatched_indices is always an iterable array
                 mismatched_indices = idxs_mask.nonzero().squeeze(-1).cpu().numpy()
                 if mismatched_indices.ndim == 0:
                     mismatched_indices = np.expand_dims(mismatched_indices, 0)
+                
                 # insert mismatched image names as keys and mismatched labels as values to the mismatched_names dictionary
                 mismatched_names = {image_names[i]: labels_np[i] for i in mismatched_indices}
-    return accuracy, mismatched_labels, mismatched_names
+                # insert mismatched image names as keys and predicted values and expected labels as values to the mismatched_names_details dictionary
+                mismatched_names_details = {image_names[i]: (predicted_np[i], labels_np[i]) for i in mismatched_indices}
+    return accuracy, mismatched_labels, mismatched_names_details
 
 def exact_match_accuracy(outputs, labels, threshold=0.5):
     # Convert outputs to binary predictions based on the threshold
@@ -166,11 +177,17 @@ def get_mismatched_labels_stats(mismatched_labels):
 # mismatched_imange_names: a dictionary of mismatched image names by labels
 def get_mismatched_image_names_by_labels(mismatched_image_names):
     mismatched_image_names_by_labels = {}
-    for image_name, label in mismatched_image_names.items():
+    for image_name, predicted_label in mismatched_image_names.items():
+        predicted = None
+        label = None
+        if predicted_label is not None:
+            predicted, label = predicted_label
+        # use a tuple with the predicted and the image name as the value
+        metadata = (predicted, image_name)
         if label in mismatched_image_names_by_labels:
-            mismatched_image_names_by_labels[label].append(image_name)
+            mismatched_image_names_by_labels[label].append(metadata)
         else:
-            mismatched_image_names_by_labels[label] = [image_name]
+            mismatched_image_names_by_labels[label] = [metadata]
     return mismatched_image_names_by_labels
 
 def plot_confusion_matrix(confusion_matrix, save_path):
@@ -185,14 +202,14 @@ def plot_confusion_matrix(confusion_matrix, save_path):
 
     
 
-def run_testing(model, test_loader, criterion, device, debugging_details=False, save_debugging_to_gdrive=False, file_suffix=""):
+def run_testing(model, test_loader, criterion, device, debugging_details=False, save_debugging_info_dir=".", file_suffix=""):
     model.eval()
     test_loss = 0.0
     test_accuracy = 0.0
 
     confusion_matrix_metric = torchmetrics.ConfusionMatrix(task="multiclass", num_classes=45).to(device)
     mismatched_labels = np.array([])
-    mismatched_imange_names = {}
+    mismatched_image_names = {}
     with torch.no_grad():
         progress_bar = tqdm(test_loader, desc="Testing", leave=False)
         for batch in progress_bar:
@@ -206,31 +223,28 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
             if (args.dataset == 'youhome_activity'):
                 mismatched_labels_in_batch = []
                 accuracy, mismatched_labels_in_batch, mismatched_image_names_in_batch = single_activity_accuracy(outputs, labels, confusion_matrix_metric, debugging_details, image_names)
+                print(f"mismatched_labels_in_batch: {mismatched_labels_in_batch}")
+                print(f"mismatched_image_names_in_batch: {mismatched_image_names_in_batch}")
                 if (mismatched_labels_in_batch is not None and len(mismatched_labels_in_batch) > 0):
                     mismatched_labels = np.concatenate((mismatched_labels, mismatched_labels_in_batch))
                 if (mismatched_image_names_in_batch is not None and len(mismatched_image_names_in_batch) > 0):
-                    mismatched_imange_names.update(mismatched_image_names_in_batch)
+                    mismatched_image_names.update(mismatched_image_names_in_batch)
             else:
                 accuracy = exact_match_accuracy(outputs, labels)
             test_accuracy += accuracy
 
             progress_bar.set_postfix(test_loss=test_loss/(progress_bar.n + 1), accuracy=100. * test_accuracy/(progress_bar.n + 1))
 
-    if (save_debugging_to_gdrive == True):
-        save_debugging_info_dir = "/content/drive/MyDrive/UIUC_research/models/"
-    else:
-        save_debugging_info_dir = "./"
-
     print(f'Test Loss: {test_loss / len(test_loader):.4f}, Accuracy: {100. * test_accuracy / len(test_loader):.2f}%')
     confusion_matrix = confusion_matrix_metric.compute()
     print(f"Confusion matrix: {confusion_matrix}")
-    plot_confusion_matrix(confusion_matrix, f"{save_debugging_info_dir}confusion_matrix_{file_suffix}.png")
+    plot_confusion_matrix(confusion_matrix, f"{save_debugging_info_dir}/confusion_matrix_{file_suffix}.png")
 
     mismatched_labels_stats = None
     mismatched_image_names_by_labels = None
     if (debugging_details == True):
         print(f"Mismatched labels: {mismatched_labels}")
-        mismatched_image_names_by_labels = get_mismatched_image_names_by_labels(mismatched_imange_names) 
+        mismatched_image_names_by_labels = get_mismatched_image_names_by_labels(mismatched_image_names) 
         mismatched_labels_stats = get_mismatched_labels_stats(mismatched_labels)
         # if (save_debugging_to_gdrive == True):
         #     save_debugging_info_dir = "/content/drive/MyDrive/sabella/research/models/"
@@ -246,7 +260,7 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
     )
     print(f"Model Testing Result: {model_testing_result}")
 
-    with open(f"{save_debugging_info_dir}model_testing_result_{file_suffix}.txt", "w") as f:
+    with open(f"{save_debugging_info_dir}/model_testing_result_{file_suffix}.txt", "w") as f:
         f.write(str(model_testing_result))
 
     return model_testing_result    
@@ -328,6 +342,12 @@ if __name__ == "__main__":
         elif (args.model == 'efficientnet-b3'):
             model = models.efficientnet_b3(pretrained=True)
             model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
+        elif (args.model == 'efficientnet-b4'):
+            model = models.efficientnet_b4(pretrained=True)
+            model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
+        elif (args.model == 'efficientnet-b5'):
+            model = models.efficientnet_b5(pretrained=True)
+            model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
         elif (args.model == 'efficientnet_v2s'):
             model = models.efficientnet_v2_s(pretrained=True)
             model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_labels)
@@ -378,14 +398,15 @@ if __name__ == "__main__":
     start_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     suffix = f"model_{args.model}_{start_timestamp}"
     # save all the args to a log file in gdrive
-    if (args.save_best_model_to_gdrive == True):
-        with open(f"/content/drive/MyDrive/UIUC_research/models/args_{suffix}.log", "w") as f:
+    if args.save_best_model_to_gdrive == True:
+        #print(f"save_best_model_to_gdrive = {args.save_best_model_to_gdrive}")
+        with open(f"{args.save_model_dir}/args_{suffix}.log", "w") as f:
             f.write(str(args))
 
     # step 5: train the model and run testing
     # step 5.1: run testing only if the flag is set
     if (args.run_testing_only == True):
-        result = run_testing(model, test_loader, criterion, device, args.dump_testing_details, args.save_debugging_to_gdrive, start_timestamp)
+        result = run_testing(model, test_loader, criterion, device, args.dump_testing_details, args.save_model_dir, start_timestamp)
         exit()
 
     # step 5.2: train the model and run testing
@@ -422,7 +443,7 @@ if __name__ == "__main__":
             torch.save(model.state_dict(), "best_model.pth")
             #save the model to google drive with the current timestamp and epoch number as the suffix.
             if (args.save_best_model_to_gdrive == True):
-                torch.save(model.state_dict(), f"/content/drive/MyDrive/UIUC_research/models/best_model_{suffix}")
+                torch.save(model.state_dict(), f"{save_file_base_dir}/best_model_{suffix}")
             
             print(f"Model saved to best_model.pth")
         # # Set the model to evaluation mode, disabling dropout and using population
@@ -465,11 +486,11 @@ if __name__ == "__main__":
     print(f"vaccuracy_history = {vaccuracy_history}")
 
     if (args.save_best_model_to_gdrive == True):
-        plt_save_dir = "/content/drive/MyDrive/UIUC_research/models/"
-        torch.save(accuracy_history, f"/content/drive/MyDrive/UIUC_research/models/accuracy_history_{suffix}.pt")
-        torch.save(loss_history, f"/content/drive/MyDrive/UIUC_research/models/loss_history_{suffix}.pt")
-        torch.save(vaccuracy_history, f"/content/drive/MyDrive/UIUC_research/models/vaccuracy_history_{suffix}.pt")
-        torch.save(vloss_history, f"/content/drive/MyDrive/UIUC_research/models/vloss_history_{suffix}.pt")
+        plt_save_dir = args.save_model_dir
+        torch.save(accuracy_history, f"{args.save_model_dir}/accuracy_history_{suffix}.pt")
+        torch.save(loss_history, f"{args.save_model_dir}/loss_history_{suffix}.pt")
+        torch.save(vaccuracy_history, f"{args.save_model_dir}/vaccuracy_history_{suffix}.pt")
+        torch.save(vloss_history, f"{args.save_model_dir}/vloss_history_{suffix}.pt")
     else:
         plt_save_dir = "./"
     plt_save_destionation = f"{plt_save_dir}loss_history_{suffix}.png"
@@ -479,4 +500,4 @@ if __name__ == "__main__":
     #load the best model saved earlier for testing
     model.load_state_dict(torch.load("best_model.pth"))
     run_testing(model, test_loader, criterion, device, args.dump_testing_details, 
-                args.save_debugging_to_gdrive, start_timestamp)
+                args.save_model_dir, start_timestamp)
