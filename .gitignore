@@ -5,7 +5,7 @@
 
 # Ignore all .log files
 *.csv
+*.copy
 
 # Ignore a specific directory
 test/
-

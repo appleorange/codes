@@ -59,7 +59,7 @@ class YouHomeDataset(torch.utils.data.Dataset):
             self.labels_path = self.data_root + "val/label"
             
         for name in glob(os.path.join(self.img_dir, '*.jpg')):
-            img_name = name.split("/")[-1][:-4]
+            img_name = name.split("\\")[-1][:-4]
             self.img_names.append(img_name)
             label_file = os.path.join(self.labels_path, img_name+ '.json')
             label_vector = np.zeros(self.num_labels, dtype=int)

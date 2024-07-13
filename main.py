@@ -443,7 +443,7 @@ if __name__ == "__main__":
             torch.save(model.state_dict(), "best_model.pth")
             #save the model to google drive with the current timestamp and epoch number as the suffix.
             if (args.save_best_model_to_gdrive == True):
-                torch.save(model.state_dict(), f"{save_file_base_dir}/best_model_{suffix}")
+                torch.save(model.state_dict(), f"{args.save_model_dir}/best_model_{suffix}")
             
             print(f"Model saved to best_model.pth")
         # # Set the model to evaluation mode, disabling dropout and using population

@@ -19,7 +19,7 @@ def get_args(parser, eval=False):
     parser.add_argument('--load_saved_model', type=bool, default=False)
     parser.add_argument('--load_from_saved_model_name', type=str, default='best_model.pth')
     parser.add_argument('--save_best_model_to_gdrive', type=bool, default=True)
-    parser.add_argument('--save_model_dir', type=str, default=".") #default="/content/drive/MyDrive/UIUC_research/models")
+    parser.add_argument('--save_model_dir', type=str, default="./models") #default="/content/drive/MyDrive/UIUC_research/models")
 
     #resnet18: 80, *, 60 # 32 best for T4, 128 best for L4
     #resnet34: 64, *, 32
