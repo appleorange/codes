@@ -198,7 +198,7 @@ def plot_confusion_matrix(confusion_matrix, save_path):
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
     plt.savefig(save_path)
-    plt.show()
+    #plt.show()
 
     
 
@@ -424,7 +424,7 @@ if __name__ == "__main__":
         model.train()
         running_loss, running_accuracy = train_one_epoch(epoch, model, train_loader, optimizer, criterion, device)
         scheduler.step()  # Update the learning rate
-        save_model(epoch, model, optimizer, running_loss / len(train_loader), f"model_epoch_{epoch+1}.pth")
+        save_model(epoch, model, optimizer, running_loss / len(train_loader), f"{args.save_model_dir}/{suffix}_epoch_{epoch+1}.pth")
         print(f'Epoch [{epoch+1}/{num_epochs}], Training Loss: {running_loss / len(train_loader):.4f}, Training Accuracy: {100. * running_accuracy / len(train_loader):.2f}%')
         loss_history.append(running_loss / len(train_loader))
         accuracy_history.append(100. * running_accuracy / len(train_loader))
@@ -440,7 +440,7 @@ if __name__ == "__main__":
         if best_loss > running_loss:
             best_loss = running_loss
             #save_model(epoch, model, optimizer, running_loss / len(train_loader), f"best_model.pth")
-            torch.save(model.state_dict(), "best_model.pth")
+            torch.save(model.state_dict(), f"{args.save_model_dir}/{suffix}_best_model.pth")
             #save the model to google drive with the current timestamp and epoch number as the suffix.
             if (args.save_best_model_to_gdrive == True):
                 torch.save(model.state_dict(), f"{args.save_model_dir}/best_model_{suffix}")
@@ -485,19 +485,18 @@ if __name__ == "__main__":
     print(f"vloss_history = {vloss_history}")
     print(f"vaccuracy_history = {vaccuracy_history}")
 
+    plt_save_dir = args.save_model_dir
     if (args.save_best_model_to_gdrive == True):
-        plt_save_dir = args.save_model_dir
         torch.save(accuracy_history, f"{args.save_model_dir}/accuracy_history_{suffix}.pt")
         torch.save(loss_history, f"{args.save_model_dir}/loss_history_{suffix}.pt")
         torch.save(vaccuracy_history, f"{args.save_model_dir}/vaccuracy_history_{suffix}.pt")
         torch.save(vloss_history, f"{args.save_model_dir}/vloss_history_{suffix}.pt")
-    else:
-        plt_save_dir = "./"
-    plt_save_destionation = f"{plt_save_dir}loss_history_{suffix}.png"
+ 
+    plt_save_destionation = f"{plt_save_dir}/loss_history_{suffix}.png"
     plot_training_results(accuracy_history, vaccuracy_history, loss_history, vloss_history, "Training Loss and Accuracy History", plt_save_destionation)
     
     # step 5.3: run testing
     #load the best model saved earlier for testing
-    model.load_state_dict(torch.load("best_model.pth"))
+    model.load_state_dict(torch.load(f"{args.save_model_dir}/{suffix}_best_model.pth"))
     run_testing(model, test_loader, criterion, device, args.dump_testing_details, 
                 args.save_model_dir, start_timestamp)
