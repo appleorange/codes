@@ -121,12 +121,12 @@ def get_data(args):
                                                 NoOpTransform(),
                                                 transforms.RandomRotation(30),
                                             ]),
-                                            transforms.RandomChoice([
-                                                NoOpTransform(),
-                                                NoOpTransform(),
-                                                #transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
-                                                transforms.v2.Grayscale(num_output_channels=3),
-                                            ]),
+                                            # transforms.RandomChoice([
+                                            #     NoOpTransform(),
+                                            #     NoOpTransform(),
+                                            #     #transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+                                            #     transforms.v2.Grayscale(num_output_channels=3),
+                                            # ]),
                                             transforms.ToTensor(),
                                             normTransform])
         testTransform = transforms.Compose([transforms.Resize((scale_size, scale_size)),

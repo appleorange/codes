@@ -5,7 +5,7 @@ from pdb import set_trace as stop
 
 
 def get_args(parser, eval=False):
-    parser.add_argument('--dataroot', type=str, default='./data/')
+    parser.add_argument('--dataroot', type=str, default='./data65k/')
     # if run_testing_only is True, then the model will be loaded from the saved model and run testing only.
     parser.add_argument('--run_testing_only', type=bool, default=False)
     parser.add_argument('--dump_testing_details', type=bool, default=True)
@@ -24,7 +24,7 @@ def get_args(parser, eval=False):
     #resnet18: 80, *, 60 # 32 best for T4, 128 best for L4
     #resnet34: 64, *, 32
     parser.add_argument('--batch_size', type=int, default=16) # 32 best for T4, 128 best for L4
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=15)
     parser.add_argument('--workers', type=int, default=10) # 24 best for T4 high memory, 20 best for L4
 
     parser.add_argument('--dataset', type=str,

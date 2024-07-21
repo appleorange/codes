@@ -223,8 +223,8 @@ def run_testing(model, test_loader, criterion, device, debugging_details=False, 
             if (args.dataset == 'youhome_activity'):
                 mismatched_labels_in_batch = []
                 accuracy, mismatched_labels_in_batch, mismatched_image_names_in_batch = single_activity_accuracy(outputs, labels, confusion_matrix_metric, debugging_details, image_names)
-                print(f"mismatched_labels_in_batch: {mismatched_labels_in_batch}")
-                print(f"mismatched_image_names_in_batch: {mismatched_image_names_in_batch}")
+                #print(f"mismatched_labels_in_batch: {mismatched_labels_in_batch}")
+                #print(f"mismatched_image_names_in_batch: {mismatched_image_names_in_batch}")
                 if (mismatched_labels_in_batch is not None and len(mismatched_labels_in_batch) > 0):
                     mismatched_labels = np.concatenate((mismatched_labels, mismatched_labels_in_batch))
                 if (mismatched_image_names_in_batch is not None and len(mismatched_image_names_in_batch) > 0):
@@ -372,7 +372,8 @@ if __name__ == "__main__":
 
 
     # step 4: set up optimizer, scheduler, and loss function
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    #optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.0013, momentum=0.9)
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)  # Example scheduler, adjust as needed
 
     # (TODO: shall we use nn.CELoss for activiticy classification?)

@@ -22,9 +22,11 @@ def sobel(im):
 
 
 def main():
-    root = "/Users/yinghong_imac/Sabella Research Project/cropped_/cropped_image" #Root Path of Images
-    new_root = "/Users/yinghong_imac/Sabella Research Project/cropped_/contour_ouputs" #New Root Path of Contour Images
-
+    #root = "/Users/yinghong_imac/Sabella Research Project/cropped_/cropped_image" #Root Path of Images
+    #new_root = "/Users/yinghong_imac/Sabella Research Project/cropped_/contour_ouputs" #New Root Path of Contour Images
+    
+    root = "\\Users\\yulia\\code\\UIUC\\data65k\\test\\jpeg" #Root Path of Images
+    new_root = "\\Users\\yulia\\code\\UIUC\\data65k\\test\\image" #New Root Path of Contour Images
     for img in listdir(root):
         img_path = root + os.sep + img
         new_img_path = new_root + os.sep + img

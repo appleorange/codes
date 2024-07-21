@@ -11,6 +11,7 @@ def plot_training_results(accuracy_history, vaccuracy_history, loss_history, vlo
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
+    #plt.ylim(0, 4)
 
     # Plot the accuracy curves
     plt.subplot(1, 2, 2)
